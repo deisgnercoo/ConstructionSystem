@@ -1,0 +1,175 @@
+// 4C Construction System — shared site shell (header, nav, footer)
+// Renders the same header/nav/footer on every page from one place, and
+// highlights the current page/section based on <body data-page="...">.
+
+const CCC_NAV = [
+  { url: "index.html", label: "Home" },
+  { url: "systems.html", label: "Our Process" },
+  { url: "projects.html", label: "Projects" },
+  {
+    label: "Who We Serve",
+    dropdown: [
+      { url: "partners.html", label: "Overview" },
+      { url: "owners-developers.html", label: "Owners & Property Developers" },
+      { url: "architects-designers.html", label: "Architects & Designers" },
+      { url: "builders-contractors.html", label: "Builders & General Contractors" },
+    ],
+  },
+  { url: "about.html", label: "About" },
+];
+
+function cccLogoMark(prefix) {
+  return `<img class="mark-full" src="${prefix || ""}assets/img/logo-full.png" alt="4C Construction Systems" />`;
+}
+
+function cccBlueprintBg(idSuffix) {
+  const id = "bp-grid-" + (idSuffix || "0");
+  return `
+  <svg class="blueprint-bg" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="${id}" width="46" height="46" patternUnits="userSpaceOnUse">
+        <path d="M 46 0 L 0 0 0 46" fill="none" stroke="currentColor" stroke-width="1"/>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#${id})" />
+  </svg>`;
+}
+
+function cccCurrentFile() {
+  const path = window.location.pathname;
+  return path.substring(path.lastIndexOf("/") + 1) || "index.html";
+}
+
+function cccIsInLocations() {
+  return window.location.pathname.includes("/locations/");
+}
+
+function cccPrefix() {
+  return cccIsInLocations() ? "../" : "";
+}
+
+function cccRenderHeader() {
+  const header = document.getElementById("site-header");
+  if (!header) return;
+  const current = cccCurrentFile();
+  const prefix = cccPrefix();
+
+  const navHtml = CCC_NAV.map((item) => {
+    if (item.dropdown) {
+      const links = item.dropdown
+        .map((d) => `<a href="${prefix}${d.url}">${d.label}</a>`)
+        .join("");
+      return `
+        <div class="dropdown">
+          <a href="${prefix}${item.dropdown[0].url}">${item.label}</a>
+          <div class="dropdown-panel">${links}</div>
+        </div>`;
+    }
+    const active = item.url === current;
+    return `<a href="${prefix}${item.url}"${active ? ' style="color:var(--color-accent)"' : ""}>${item.label}</a>`;
+  }).join("");
+
+  // Replace the mount div's outerHTML (not innerHTML) so <header> sits
+  // directly in the body with no wrapping div — a wrapping div here
+  // breaks position:sticky on the header in some browsers.
+  header.outerHTML = `
+    <header class="site-header" id="site-header">
+      <div class="wrap">
+        <a class="brand" href="${prefix}index.html">
+          ${cccLogoMark(prefix)}
+        </a>
+        <nav class="main-nav" aria-label="Primary">
+          ${navHtml}
+        </nav>
+        <a class="header-phone" href="tel:6502003182">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.36 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.34 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+          650-200-3182
+        </a>
+        <a class="btn btn-primary header-cta" href="${prefix}contact.html">Talk to Us</a>
+        <button class="menu-toggle" id="menu-toggle" aria-label="Toggle navigation" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </header>
+  `;
+}
+
+function cccRenderFooter() {
+  const footer = document.getElementById("site-footer");
+  if (!footer) return;
+  const prefix = cccPrefix();
+  footer.innerHTML = `
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <a class="brand" href="${prefix}index.html">
+              ${cccLogoMark(prefix)}
+              <span>4C Construction System</span>
+            </a>
+            <p>Turning building designs into certified, manufactured, installation-ready components for California's owners, architects, and builders.</p>
+          </div>
+          <div>
+            <h4>Our Process</h4>
+            <a href="${prefix}systems.html">The End-to-End Process</a>
+            <a href="${prefix}manufacturing.html">Manufacturing Process</a>
+            <a href="${prefix}projects.html">Project Portfolio</a>
+            <a href="${prefix}sustainability.html">Sustainability</a>
+          </div>
+          <div>
+            <h4>Locations</h4>
+            <a href="${prefix}locations/altadena-construction.html">Altadena Construction</a>
+            <a href="${prefix}locations/pacific-palisades-construction.html">Pacific Palisades Construction</a>
+            <a href="${prefix}locations/los-angeles-construction.html">Los Angeles Construction</a>
+            <a href="${prefix}locations/san-diego-construction.html">San Diego Construction</a>
+            <a href="${prefix}locations/san-francisco-bay-area-construction.html">San Francisco Bay Area Construction</a>
+            <a href="${prefix}locations/sacramento-construction.html">Sacramento Construction</a>
+          </div>
+          <div>
+            <h4>Who We Serve</h4>
+            <a href="${prefix}partners.html">Overview</a>
+            <a href="${prefix}owners-developers.html">Owners &amp; Developers</a>
+            <a href="${prefix}architects-designers.html">Architects &amp; Designers</a>
+            <a href="${prefix}builders-contractors.html">Builders &amp; GCs</a>
+          </div>
+          <div>
+            <h4>Company</h4>
+            <a href="${prefix}about.html">About Us</a>
+            <a href="${prefix}contact.html">Contact</a>
+            <a href="tel:6502003182">650-200-3182</a>
+            <a href="mailto:info@4ccs.com">info@4ccs.com</a>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span>&copy; ${new Date().getFullYear()} 4C Construction System. CAB #N41299 &middot; CSLB #1145002. Hayward, CA.</span>
+          <span>2447 Industrial Parkway, Hayward, CA 94545</span>
+        </div>
+      </div>
+    </footer>
+  `;
+}
+
+function cccWireMobileNav() {
+  const toggle = document.getElementById("menu-toggle");
+  const nav = document.querySelector(".main-nav");
+  if (!toggle || !nav) return;
+  toggle.addEventListener("click", () => {
+    const open = nav.classList.toggle("open-mobile");
+    toggle.setAttribute("aria-expanded", String(open));
+    if (open) {
+      nav.style.cssText =
+        "display:flex; flex-direction:column; position:absolute; top:84px; left:0; right:0; background:var(--color-white); padding:16px 32px; border-bottom:1px solid var(--color-line); gap:4px;";
+    } else {
+      nav.style.cssText = "";
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  cccRenderHeader();
+  cccRenderFooter();
+  cccWireMobileNav();
+  document.querySelectorAll(".blueprint-bg-slot").forEach((slot, i) => {
+    slot.outerHTML = cccBlueprintBg(i);
+  });
+});
