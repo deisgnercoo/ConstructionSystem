@@ -18,8 +18,11 @@ const CCC_NAV = [
   { url: "about.html", label: "About" },
 ];
 
-function cccLogoMark(prefix) {
-  return `<img class="mark-full" src="${prefix || ""}assets/img/logo-full.png" alt="4C Construction Systems" />`;
+function cccLogoMark(prefix, variant) {
+  // The footer sits on a dark background, where the dark-text "logo-full"
+  // wordmark is effectively invisible — it needs the white-text variant.
+  const file = variant === "white" ? "logo-white.png" : "logo-full.png";
+  return `<img class="mark-full" src="${prefix || ""}assets/img/${file}" alt="4C Construction Systems" />`;
 }
 
 function cccBlueprintBg(idSuffix) {
@@ -104,8 +107,7 @@ function cccRenderFooter() {
         <div class="footer-grid">
           <div class="footer-brand">
             <a class="brand" href="${prefix}index.html">
-              ${cccLogoMark(prefix)}
-              <span>4C Construction System</span>
+              ${cccLogoMark(prefix, "white")}
             </a>
             <p>Turning building designs into certified, manufactured, installation-ready components for California's owners, architects, and builders.</p>
           </div>
@@ -165,10 +167,70 @@ function cccWireMobileNav() {
   });
 }
 
+function cccShowFormSuccess(form, viaEmail) {
+  const message = document.createElement("div");
+  message.className = "callout";
+  message.style.marginTop = "20px";
+  message.innerHTML = viaEmail
+    ? '<p>Thanks! Your email app should now open with your request ready to send. If it doesn\'t open automatically, email us directly at <a href="mailto:info@4ccs.com">info@4ccs.com</a>.</p>'
+    : "<p>Thanks! Your request has been sent to our team.</p>";
+  form.replaceWith(message);
+}
+
+function cccWireForms() {
+  // Submissions post to /api/submit-form (a Vercel serverless function that
+  // relays them to Slack). If that call fails for any reason — the function
+  // isn't deployed yet, SLACK_WEBHOOK_URL isn't set, a network hiccup — the
+  // request still reaches the team as a pre-filled email instead of vanishing.
+  document.querySelectorAll("form.form-grid").forEach((form) => {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fields = [];
+      form.querySelectorAll("input[name], select[name], textarea[name]").forEach((field) => {
+        const value = field.value.trim();
+        if (!value) return;
+        const label = form.querySelector(`label[for="${field.id}"]`);
+        fields.push({ label: label ? label.textContent : field.name, value });
+      });
+      const formName = form.closest(".card")?.querySelector("h3")?.textContent || "website";
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const originalLabel = submitBtn ? submitBtn.textContent : "";
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Sending...";
+      }
+
+      fetch("/api/submit-form", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formName, fields }),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("submit-form request failed");
+          cccShowFormSuccess(form, false);
+        })
+        .catch(() => {
+          const subject = encodeURIComponent("New inquiry from 4ccs.com");
+          const body = encodeURIComponent(fields.map((f) => `${f.label}: ${f.value}`).join("\n"));
+          window.location.href = `mailto:info@4ccs.com?subject=${subject}&body=${body}`;
+          cccShowFormSuccess(form, true);
+        })
+        .finally(() => {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalLabel;
+          }
+        });
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   cccRenderHeader();
   cccRenderFooter();
   cccWireMobileNav();
+  cccWireForms();
   document.querySelectorAll(".blueprint-bg-slot").forEach((slot, i) => {
     slot.outerHTML = cccBlueprintBg(i);
   });

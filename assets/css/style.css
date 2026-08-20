@@ -269,14 +269,14 @@ p { margin: 0 0 16px; color: var(--color-steel); }
 .hero .wrap { position: relative; z-index: 1; }
 .hero-grid {
   display: block;
-  max-width: 800px;
 }
-.hero h1 { color: var(--color-white); }
+/* Locked to the hero-grid's old 800px cap so the heading keeps wrapping
+   exactly as before, independent of how wide the container around it is. */
+.hero h1 { color: var(--color-white); max-width: 800px; }
 .hero .kicker { color: var(--color-accent); font-size: 0.85rem; letter-spacing: 0.12em; }
 .hero p.lede {
   font-size: 1.15rem;
   color: rgba(255,255,255,0.72);
-  max-width: 52ch;
 }
 .hero-ctas { display: flex; gap: 14px; margin-top: 30px; flex-wrap: wrap; }
 .hero-stats {
@@ -421,6 +421,17 @@ body[data-page="safe"] .section-head:has(.btn-outline) { max-width: none; }
 body[data-page="eco"] .overview-grid .section-head { max-width: none; }
 body[data-page="eco"] .overview-grid .section-head p { font-size: 1.05rem; }
 body[data-page="eco"] .section-head:has(.btn-outline) { max-width: none; }
+/* The stat band and the "Proven In The Field" section each sit directly above
+   another full section; the default 84px top+bottom section padding stacks
+   into an oversized double gap at both transitions, so tighten just those. */
+body[data-page="safe"] section:has(> .wrap > .stat-band),
+body[data-page="eco"] section:has(> .wrap > .stat-band),
+body[data-page="safe"] section:has(.btn-outline),
+body[data-page="eco"] section:has(.btn-outline) { padding-bottom: 36px; }
+body[data-page="safe"] section:has(> .wrap > .stat-band) + section,
+body[data-page="eco"] section:has(> .wrap > .stat-band) + section,
+body[data-page="safe"] section:has(.btn-outline) + section,
+body[data-page="eco"] section:has(.btn-outline) + section { padding-top: 36px; }
 /* "Our Mission" section-head, identified by the testimonial that follows it. */
 .section-head:has(+ .testimonial) { max-width: none; }
 body[data-page="about"] section.on-dark .section-head { max-width: none; }
@@ -492,6 +503,12 @@ section.on-paper-dim { background: var(--color-paper-dim); }
 .pillar h4 { margin-top: 14px; margin-bottom: 8px; }
 .pillar p { font-size: 0.92rem; margin: 0; }
 .section-head:has(+ .pillar-grid) { max-width: none; }
+#why-not-x .section-head { max-width: none; }
+.section-head:has(+ .phase-flow) { max-width: none; }
+#who-we-serve .section-head { max-width: none; }
+#featured-work .section-head { max-width: none; }
+.section-head:has(+ .video-grid) { max-width: none; }
+.section-head:has(+ .article-columns) { max-width: none; }
 
 /* ---------- Cards ---------- */
 .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
@@ -1369,7 +1386,7 @@ section.full-bleed-hero { padding: 0; }
 /* ---------- Overview layout with panel diagram ---------- */
 .overview-grid { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 40px; align-items: start; }
 .overview-grid figure { margin: 0; text-align: center; }
-.overview-grid figure img { max-width: 220px; margin: 0 auto; border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+.overview-grid figure img { max-width: 340px; margin: 0 auto; border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
 .overview-grid figcaption { margin-top: 12px; font-size: 0.8rem; color: var(--color-steel); }
 @media (max-width: 900px) {
   .overview-grid { grid-template-columns: 1fr; }
