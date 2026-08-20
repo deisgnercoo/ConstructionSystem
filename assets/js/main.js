@@ -157,19 +157,153 @@ function cccWireMobileNav() {
   if (!toggle || !nav) return;
   toggle.addEventListener("click", () => {
     const open = nav.classList.toggle("open-mobile");
+    toggle.classList.toggle("is-open", open);
     toggle.setAttribute("aria-expanded", String(open));
-    if (open) {
-      nav.style.cssText =
-        "display:flex; flex-direction:column; position:absolute; top:84px; left:0; right:0; background:var(--color-white); padding:16px 32px; border-bottom:1px solid var(--color-line); gap:4px;";
-    } else {
-      nav.style.cssText = "";
-    }
   });
+}
+
+// Subtle shadow once the page has scrolled past the very top, so the sticky
+// header reads as "lifted" over content instead of always looking the same.
+function cccWireHeaderScroll() {
+  const header = document.querySelector(".site-header");
+  if (!header) return;
+  let ticking = false;
+  const update = () => {
+    header.classList.toggle("is-scrolled", window.scrollY > 8);
+    ticking = false;
+  };
+  update();
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(update);
+    },
+    { passive: true }
+  );
+}
+
+// ---------- Scroll-linked motion ----------
+// Drives two things from one rAF loop, so the page responds continuously to
+// scroll position rather than firing one-shot entrances:
+//   1. Hero    — photo zoom + copy lift/fade as the hero scrolls away.
+//   2. Reveals — per-element 0→1 progress as it crosses into the viewport,
+//      which naturally runs backwards when the user scrolls back up.
+// Elements only get their starting (hidden/offset) state when this runs and
+// reduced motion is off, so content is never dependent on JS to be visible.
+function cccInitScrollMotion() {
+  const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReduced || !("IntersectionObserver" in window)) return;
+
+  const revealSelector = [
+    ".section-head",
+    ".card",
+    ".system-card",
+    ".pillar",
+    ".phase-flow-step",
+    ".project-card",
+    ".compare-alt-card",
+    ".compare-4c-panel",
+    ".value-split",
+    ".exploded-diagram",
+    ".partner-logo",
+    ".ebook-promo-card",
+    ".split-ratio",
+    ".testimonial",
+    ".stat-band",
+    ".slideshow",
+    ".full-bleed-feature",
+    ".location-card",
+    ".faq-item",
+    ".cta-band",
+  ].join(",");
+  // Large standalone imagery reads better easing up in scale than sliding.
+  const scaleSelector = [".overview-grid figure", ".photo-gallery figure", ".video-embed"].join(",");
+
+  const hero = document.querySelector(".hero, .page-hero");
+  const revealEls = Array.from(document.querySelectorAll(revealSelector + "," + scaleSelector));
+
+  // Stagger siblings that cross the viewport together (cards in one grid) by
+  // offsetting where each one's progress starts, capped so a long row still
+  // finishes promptly.
+  const seenPerParent = new Map();
+  revealEls.forEach((el) => {
+    const parent = el.parentElement;
+    const i = seenPerParent.get(parent) || 0;
+    seenPerParent.set(parent, i + 1);
+    el.__cccStagger = Math.min(i, 3) * 42;
+    el.classList.add(el.matches(scaleSelector) ? "scroll-reveal-scale" : "scroll-reveal");
+    el.style.setProperty("--p", "0");
+  });
+
+  if (!hero && !revealEls.length) return;
+
+  // Only elements currently near the viewport get recomputed each frame.
+  const active = new Set();
+  const io = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          active.add(entry.target);
+        } else {
+          active.delete(entry.target);
+          // Settle to a clean end state so nothing is left mid-animation
+          // off-screen, and drop the compositor hint.
+          entry.target.style.setProperty("--p", entry.boundingClientRect.top < 0 ? "1" : "0");
+          entry.target.classList.remove("is-animating");
+        }
+      });
+    },
+    { rootMargin: "20% 0px 20% 0px" }
+  );
+  revealEls.forEach((el) => io.observe(el));
+
+  const clamp01 = (n) => (n < 0 ? 0 : n > 1 ? 1 : n);
+  // Gentle deceleration — matches the CSS easing language elsewhere.
+  const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+
+  let ticking = false;
+  const update = () => {
+    ticking = false;
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+
+    if (hero) {
+      const rect = hero.getBoundingClientRect();
+      // 0 while the hero is fully in place, 1 once it has scrolled fully away.
+      const p = clamp01(-rect.top / Math.max(rect.height, 1));
+      hero.style.setProperty("--hero-p", p.toFixed(4));
+    }
+
+    active.forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      // Reveal: begins as the element's top enters the lower part of the
+      // viewport, completes by the time it has risen a comfortable distance.
+      const start = vh * 0.94 - (el.__cccStagger || 0);
+      const end = vh * 0.56 - (el.__cccStagger || 0);
+      const raw = clamp01((start - rect.top) / Math.max(start - end, 1));
+      const p = easeOut(raw);
+      el.style.setProperty("--p", p.toFixed(4));
+      el.classList.toggle("is-animating", p > 0.001 && p < 0.999);
+    });
+  };
+
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(update);
+  };
+
+  update();
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
+  // Images finishing late can shift layout; recompute once they settle.
+  window.addEventListener("load", update);
 }
 
 function cccShowFormSuccess(form, viaEmail) {
   const message = document.createElement("div");
-  message.className = "callout";
+  message.className = "callout form-success";
   message.style.marginTop = "20px";
   message.innerHTML = viaEmail
     ? '<p>Thanks! Your email app should now open with your request ready to send. If it doesn\'t open automatically, email us directly at <a href="mailto:info@4ccs.com">info@4ccs.com</a>.</p>'
@@ -230,7 +364,9 @@ document.addEventListener("DOMContentLoaded", () => {
   cccRenderHeader();
   cccRenderFooter();
   cccWireMobileNav();
+  cccWireHeaderScroll();
   cccWireForms();
+  cccInitScrollMotion();
   document.querySelectorAll(".blueprint-bg-slot").forEach((slot, i) => {
     slot.outerHTML = cccBlueprintBg(i);
   });
