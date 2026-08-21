@@ -18,7 +18,7 @@
 // or fails, the other can still go through, and nothing about the failure
 // (or either secret) is ever sent back to the browser or logged.
 
-const EMAIL_TO = "info@4ccs.com";
+const EMAIL_TO = "alishbach447@gmail.com";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function findField(fields, name) {
