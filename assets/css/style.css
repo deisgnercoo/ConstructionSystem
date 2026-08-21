@@ -1567,7 +1567,7 @@ section.full-bleed-hero { padding: 0; }
 /* ---------- Overview layout with panel diagram ---------- */
 .overview-grid { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 40px; align-items: start; }
 .overview-grid figure { margin: 0; text-align: center; }
-.overview-grid figure img { max-width: 340px; margin: 0 auto; border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+.overview-grid figure img { max-width: 340px; margin: 0 auto; }
 .overview-grid figcaption { margin-top: 12px; font-size: 0.8rem; color: var(--color-steel); }
 @media (max-width: 900px) {
   .overview-grid { grid-template-columns: 1fr; }
@@ -1681,6 +1681,11 @@ section.full-bleed-hero { padding: 0; }
   width: auto;
   height: auto;
   transition: transform var(--dur-base) var(--ease-out);
+  /* A few of these logos are flat JPG/WebP with a baked-in white background
+     (no alpha channel possible); multiply blends that white into the
+     section's paper background so it reads as transparent, same trick
+     already used for the homepage's logo marquee. */
+  mix-blend-mode: multiply;
 }
 @media (hover: hover) and (pointer: fine) {
   .partner-logo:hover img { transform: scale(1.06); }
