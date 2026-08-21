@@ -139,7 +139,7 @@ function cccRenderFooter() {
             <a href="${prefix}about.html">About Us</a>
             <a href="${prefix}contact.html">Contact</a>
             <a href="tel:6502003182">650-200-3182</a>
-            <a href="mailto:alishbach447@gmail.com">alishbach447@gmail.com</a>
+            <a href="mailto:info@4ccs.com">info@4ccs.com</a>
           </div>
         </div>
         <div class="footer-bottom">
@@ -306,7 +306,7 @@ function cccShowFormSuccess(form, viaEmail) {
   message.className = "callout form-success";
   message.style.marginTop = "20px";
   message.innerHTML = viaEmail
-    ? '<p>Thanks! Your email app should now open with your request ready to send. If it doesn\'t open automatically, email us directly at <a href="mailto:alishbach447@gmail.com">alishbach447@gmail.com</a>.</p>'
+    ? '<p>Thanks! Your email app should now open with your request ready to send. If it doesn\'t open automatically, email us directly at <a href="mailto:info@4ccs.com">info@4ccs.com</a>.</p>'
     : "<p>Thanks! Your request has been sent to our team.</p>";
   form.replaceWith(message);
 }
@@ -347,7 +347,7 @@ function cccWireForms() {
         .catch(() => {
           const subject = encodeURIComponent("New inquiry from 4ccs.com");
           const body = encodeURIComponent(fields.map((f) => `${f.label}: ${f.value}`).join("\n"));
-          window.location.href = `mailto:alishbach447@gmail.com?subject=${subject}&body=${body}`;
+          window.location.href = `mailto:info@4ccs.com?subject=${subject}&body=${body}`;
           cccShowFormSuccess(form, true);
         })
         .finally(() => {
