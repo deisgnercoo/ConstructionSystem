@@ -1,2 +1,8 @@
 Portfolio-20260731T110708Z-1-001.zip
 *.zip
+
+# Local environment secrets (Slack webhook, email API key) — never commit.
+.env
+.env.local
+.env.*.local
+.vercel

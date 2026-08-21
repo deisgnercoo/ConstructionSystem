@@ -324,7 +324,7 @@ function cccWireForms() {
         const value = field.value.trim();
         if (!value) return;
         const label = form.querySelector(`label[for="${field.id}"]`);
-        fields.push({ label: label ? label.textContent : field.name, value });
+        fields.push({ name: field.name, label: label ? label.textContent : field.name, value });
       });
       const formName = form.closest(".card")?.querySelector("h3")?.textContent || "website";
 
