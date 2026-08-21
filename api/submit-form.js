@@ -18,7 +18,11 @@
 // or fails, the other can still go through, and nothing about the failure
 // (or either secret) is ever sent back to the browser or logged.
 
-const EMAIL_TO = "info@4ccs.com";
+// TEMPORARY: pointed at the Resend account's own signup address for testing,
+// since Resend's sandbox sender (no verified domain yet) can only deliver to
+// that address (confirmed via the 403 in Vercel's logs). Switch this back to
+// the real destination once a sending domain is verified in Resend.
+const EMAIL_TO = "deisgnercoo@gmail.com";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function findField(fields, name) {
