@@ -142,7 +142,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-img { max-width: 100%; display: block; }
+/* height:auto keeps the aspect ratio correct now that every <img> carries its
+   intrinsic width/height attributes (those reserve layout space and stop the
+   page shifting as images arrive). Without it, any image whose width CSS
+   constrains — .overview-grid figure img, for instance — would keep its full
+   intrinsic height and render stretched. Rules that deliberately fix a height
+   (.photo-gallery img, .logo-marquee-track img) use class selectors and still
+   win on specificity. */
+img { max-width: 100%; height: auto; display: block; }
 
 a { color: var(--color-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -159,6 +166,44 @@ h1 { font-size: clamp(2.4rem, 4.5vw, 3.6rem); font-weight: 800; }
 h2 { font-size: clamp(1.7rem, 3vw, 2.3rem); font-weight: 700; }
 h3 { font-size: 1.25rem; font-weight: 700; }
 h4 { font-size: 1.05rem; font-weight: 600; }
+
+/* Available to screen readers and to the document outline, but not painted.
+   Used where a section needs a heading for correct hierarchy but the design
+   already makes the grouping obvious visually. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Lets keyboard users jump the header nav straight to the page content.
+   Off-screen until focused, then it drops into the top-left corner. */
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 200;
+  transform: translateY(-120%);
+  padding: 12px 20px;
+  background: var(--color-ink);
+  color: var(--color-white);
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-bottom-right-radius: var(--radius-lg);
+  transition: transform var(--dur-micro) var(--ease-smooth);
+}
+.skip-link:focus {
+  transform: translateY(0);
+  text-decoration: none;
+}
 
 /* On desktop, widen this heading's container so it breaks to two balanced
    lines at full size instead of three; it wraps normally on smaller screens. */
@@ -650,7 +695,9 @@ section.on-paper-dim { background: var(--color-paper-dim); }
   color: var(--color-steel);
   letter-spacing: 0.1em;
 }
-.pillar h4 { margin-top: 14px; margin-bottom: 8px; }
+/* h3 for correct hierarchy (these sit under the section's h2), sized as the
+   card heading the design calls for rather than as a default h3. */
+.pillar h3, .pillar h4 { font-size: 1.05rem; font-weight: 600; margin-top: 14px; margin-bottom: 8px; }
 .pillar p { font-size: 0.92rem; margin: 0; }
 .section-head:has(+ .pillar-grid) { max-width: none; }
 #why-not-x .section-head { max-width: none; }
@@ -851,6 +898,10 @@ section.on-paper-dim { background: var(--color-paper-dim); }
   display: block;
 }
 .stat-band .stat-label { font-size: 0.85rem; color: var(--color-steel); margin-top: 6px; }
+/* Three-up variant. Lives here rather than in an inline style so the mobile
+   rules further down can still collapse it — an inline grid-template-columns
+   outranks a media query and kept this band at three columns on phones. */
+.stat-band-3 { grid-template-columns: repeat(3, 1fr); }
 
 /* ---------- Project cards ---------- */
 /* ---------- Video embed (responsive 16:9) ---------- */
@@ -1091,7 +1142,7 @@ section.full-bleed-hero { padding: 0; }
   font-size: 1rem;
   font-weight: 500;
 }
-.step-list h4 { margin-bottom: 4px; }
+.step-list h3, .step-list h4 { font-size: 1.05rem; font-weight: 600; margin-bottom: 4px; }
 .step-list p { margin: 0; font-size: 0.92rem; }
 
 /* ---------- Flow diagram (concept-to-implementation, per audience) ---------- */
@@ -1162,9 +1213,9 @@ section.full-bleed-hero { padding: 0; }
   justify-content: center;
 }
 .flow-diagram .flow-node-body { padding-top: 10px; }
-.flow-diagram .flow-node h4 { color: var(--color-white); font-size: 0.98rem; margin-bottom: 6px; }
+.flow-diagram .flow-node h3, .flow-diagram .flow-node h4 { color: var(--color-white); font-size: 0.98rem; font-weight: 600; margin-bottom: 6px; }
 .flow-diagram .flow-node p { color: rgba(255,255,255,0.62); font-size: 0.86rem; margin: 0; max-width: 46ch; }
-.on-paper-dim .flow-diagram .flow-node h4 { color: var(--color-ink); }
+.on-paper-dim .flow-diagram .flow-node h3, .on-paper-dim .flow-diagram .flow-node h4 { color: var(--color-ink); }
 .on-paper-dim .flow-diagram .flow-node p { color: var(--color-steel); }
 
 .prose-block p { line-height: 1.7; }
@@ -1572,6 +1623,14 @@ section.full-bleed-hero { padding: 0; }
 @media (max-width: 900px) {
   .overview-grid { grid-template-columns: 1fr; }
   .overview-grid figure { order: -1; }
+  /* Grid items default to min-width:auto, so the track could never shrink
+     below its widest content — the 420px diagram, and the spec table on the
+     system pages. On a 375px phone that pushed the whole document 77px wider
+     than the viewport and the page scrolled sideways. Letting the track
+     shrink, and capping the diagram to the track rather than a fixed 420px,
+     keeps everything inside the screen. */
+  .overview-grid > * { min-width: 0; }
+  .overview-grid figure img { max-width: 100%; }
 }
 
 .callout {
@@ -1784,7 +1843,9 @@ input:focus, select:focus, textarea:focus {
   padding-bottom: 40px;
   border-bottom: 1px solid rgba(255,255,255,0.12);
 }
-.footer-grid h4 { color: var(--color-white); font-size: 0.85rem; letter-spacing: 0.04em; margin-bottom: 16px; }
+/* Footer column labels are h2 so the footer's link groups are reachable as
+   real headings; the sizing below keeps them looking exactly as before. */
+.footer-grid h2, .footer-grid h4 { color: var(--color-white); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 16px; }
 .footer-grid a {
   color: rgba(255,255,255,0.62);
   display: block;

@@ -1,6 +1,14 @@
 // 4C Construction System — shared site shell (header, nav, footer)
-// Renders the same header/nav/footer on every page from one place, and
-// highlights the current page/section based on <body data-page="...">.
+//
+// The header and footer are now written into every page as real HTML, so the
+// navigation and footer link graph are in the served markup and don't depend
+// on this file running — crawlers that skip JavaScript still see every
+// internal link. The render functions below stay as a fallback for any page
+// that still ships the old empty <div id="site-header"> mount, and they bail
+// out the moment a real shell is already on the page so nothing is duplicated.
+//
+// Because the markup is now baked into all 20 pages, a nav or footer change
+// has to be applied to those pages as well as to the definitions here.
 
 const CCC_NAV = [
   { url: "index.html", label: "Home" },
@@ -21,8 +29,10 @@ const CCC_NAV = [
 function cccLogoMark(prefix, variant) {
   // The footer sits on a dark background, where the dark-text "logo-full"
   // wordmark is effectively invisible — it needs the white-text variant.
-  const file = variant === "white" ? "logo-white.png" : "logo-full.png";
-  return `<img class="mark-full" src="${prefix || ""}assets/img/${file}" alt="4C Construction Systems" />`;
+  const file = variant === "white" ? "logo-white.webp" : "logo-full.webp";
+  return `<img class="mark-full" src="${prefix || ""}assets/img/${file}" alt="4C Construction System" width="600" height="${
+    variant === "white" ? 288 : 279
+  }" />`;
 }
 
 function cccBlueprintBg(idSuffix) {
@@ -53,7 +63,8 @@ function cccPrefix() {
 
 function cccRenderHeader() {
   const header = document.getElementById("site-header");
-  if (!header) return;
+  // Already served as real markup — leave it alone.
+  if (!header || header.tagName === "HEADER") return;
   const current = cccCurrentFile();
   const prefix = cccPrefix();
 
@@ -97,9 +108,18 @@ function cccRenderHeader() {
   `;
 }
 
+// Keeps the served copyright year current without making the year itself
+// depend on JavaScript — the markup ships with a real year already in place.
+function cccSyncFooterYear() {
+  const slot = document.getElementById("footer-year");
+  const year = String(new Date().getFullYear());
+  if (slot && slot.textContent !== year) slot.textContent = year;
+}
+
 function cccRenderFooter() {
   const footer = document.getElementById("site-footer");
-  if (!footer) return;
+  // Already served as real markup — leave it alone.
+  if (!footer || footer.tagName === "FOOTER") return;
   const prefix = cccPrefix();
   footer.innerHTML = `
     <footer class="site-footer">
@@ -112,14 +132,14 @@ function cccRenderFooter() {
             <p>Turning building designs into certified, manufactured, installation-ready components for California's owners, architects, and builders.</p>
           </div>
           <div>
-            <h4>Our Process</h4>
+            <h2>Our Process</h2>
             <a href="${prefix}systems.html">The End-to-End Process</a>
             <a href="${prefix}manufacturing.html">Manufacturing Process</a>
             <a href="${prefix}projects.html">Project Portfolio</a>
             <a href="${prefix}sustainability.html">Sustainability</a>
           </div>
           <div>
-            <h4>Locations</h4>
+            <h2>Locations</h2>
             <a href="${prefix}locations/altadena-construction.html">Altadena Construction</a>
             <a href="${prefix}locations/pacific-palisades-construction.html">Pacific Palisades Construction</a>
             <a href="${prefix}locations/los-angeles-construction.html">Los Angeles Construction</a>
@@ -128,14 +148,14 @@ function cccRenderFooter() {
             <a href="${prefix}locations/sacramento-construction.html">Sacramento Construction</a>
           </div>
           <div>
-            <h4>Who We Serve</h4>
+            <h2>Who We Serve</h2>
             <a href="${prefix}partners.html">Overview</a>
             <a href="${prefix}owners-developers.html">Owners &amp; Developers</a>
             <a href="${prefix}architects-designers.html">Architects &amp; Designers</a>
             <a href="${prefix}builders-contractors.html">Builders &amp; GCs</a>
           </div>
           <div>
-            <h4>Company</h4>
+            <h2>Company</h2>
             <a href="${prefix}about.html">About Us</a>
             <a href="${prefix}contact.html">Contact</a>
             <a href="tel:6502003182">650-200-3182</a>
@@ -326,7 +346,10 @@ function cccWireForms() {
         const label = form.querySelector(`label[for="${field.id}"]`);
         fields.push({ name: field.name, label: label ? label.textContent : field.name, value });
       });
-      const formName = form.closest(".card")?.querySelector("h3")?.textContent || "website";
+      // data-form-name labels the submission explicitly; otherwise fall back to
+      // the heading of the card the form sits in, as before.
+      const formName =
+        form.dataset.formName || form.closest(".card")?.querySelector("h3")?.textContent || "website";
 
       const submitBtn = form.querySelector('button[type="submit"]');
       const originalLabel = submitBtn ? submitBtn.textContent : "";
@@ -363,6 +386,7 @@ function cccWireForms() {
 document.addEventListener("DOMContentLoaded", () => {
   cccRenderHeader();
   cccRenderFooter();
+  cccSyncFooterYear();
   cccWireMobileNav();
   cccWireHeaderScroll();
   cccWireForms();

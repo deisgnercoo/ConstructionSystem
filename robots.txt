@@ -1,4 +1,8 @@
 User-agent: *
+# Form-submission endpoint. POST-only, nothing to index. Listed before the
+# blanket Allow so that crawlers applying first-match rule order (rather than
+# Google's longest-match) still honour it.
+Disallow: /api/
 Allow: /
 
 Sitemap: https://www.4ccs.com/sitemap.xml
