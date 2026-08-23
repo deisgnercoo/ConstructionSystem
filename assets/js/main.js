@@ -1,4 +1,4 @@
-// 4C Construction System — shared site shell (header, nav, footer)
+// 4C Construction Systems — shared site shell (header, nav, footer)
 //
 // The header and footer are now written into every page as real HTML, so the
 // navigation and footer link graph are in the served markup and don't depend
@@ -30,7 +30,7 @@ function cccLogoMark(prefix, variant) {
   // The footer sits on a dark background, where the dark-text "logo-full"
   // wordmark is effectively invisible — it needs the white-text variant.
   const file = variant === "white" ? "logo-white.webp" : "logo-full.webp";
-  return `<img class="mark-full" src="${prefix || ""}assets/img/${file}" alt="4C Construction System" width="600" height="${
+  return `<img class="mark-full" src="${prefix || ""}assets/img/${file}" alt="4C Construction Systems" width="600" height="${
     variant === "white" ? 288 : 279
   }" />`;
 }
@@ -163,7 +163,7 @@ function cccRenderFooter() {
           </div>
         </div>
         <div class="footer-bottom">
-          <span>&copy; ${new Date().getFullYear()} 4C Construction System. CAB #N41299 &middot; CSLB #1145002. Hayward, CA.</span>
+          <span>&copy; ${new Date().getFullYear()} 4C Construction Systems. CAB #N41299 &middot; CSLB #1145002. Hayward, CA.</span>
           <span>2447 Industrial Parkway, Hayward, CA 94545</span>
         </div>
       </div>
@@ -213,7 +213,7 @@ function cccWireHeaderScroll() {
 // Elements only get their starting (hidden/offset) state when this runs and
 // reduced motion is off, so content is never dependent on JS to be visible.
 function cccInitScrollMotion() {
-  const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const prefersReduced = cccA11yPrefersReducedMotion();
   if (prefersReduced || !("IntersectionObserver" in window)) return;
 
   const revealSelector = [
@@ -274,6 +274,13 @@ function cccInitScrollMotion() {
           entry.target.classList.remove("is-animating");
         }
       });
+      // IntersectionObserver always reports back asynchronously, after the
+      // initial update() below has already run with an empty `active` set —
+      // so anything already in view on page load would otherwise sit at
+      // --p:0 (invisible) until the visitor scrolled and triggered a fresh
+      // update(). Scheduling one here as soon as intersection state is known
+      // closes that gap without waiting for a scroll.
+      onScroll();
     },
     { rootMargin: "20% 0px 20% 0px" }
   );
@@ -321,31 +328,69 @@ function cccInitScrollMotion() {
   window.addEventListener("load", update);
 }
 
-function cccShowFormSuccess(form, viaEmail) {
+// Replaces the form with the server-confirmed confirmation. Only ever called
+// after /api/submit-form has answered 200, i.e. after Slack and the email have
+// both actually gone out.
+function cccShowFormSuccess(form) {
   const message = document.createElement("div");
   message.className = "callout form-success";
   message.style.marginTop = "20px";
-  message.innerHTML = viaEmail
-    ? '<p>Thanks! Your email app should now open with your request ready to send. If it doesn\'t open automatically, email us directly at <a href="mailto:info@4ccs.com">info@4ccs.com</a>.</p>'
-    : "<p>Thanks! Your request has been sent to our team.</p>";
+  message.setAttribute("role", "status");
+  message.innerHTML =
+    "<p>Thanks for reaching out to 4C. We&rsquo;ve received your message and look forward to connecting with you.</p>";
   form.replaceWith(message);
+}
+
+// Delivery failed, so the form stays on the page and keeps the visitor's
+// answers -- they can just press the button again. The message is deliberately
+// vague about the cause: the specifics are in the server log, not the browser.
+function cccShowFormError(form, text) {
+  let box = form.querySelector(".form-error");
+  if (!box) {
+    box = document.createElement("div");
+    box.className = "callout form-error full";
+    box.setAttribute("role", "alert");
+    const submitCell = form.querySelector('button[type="submit"]')?.parentElement;
+    if (submitCell) form.insertBefore(box, submitCell);
+    else form.appendChild(box);
+  }
+  box.innerHTML = `<p>${text}</p>`;
 }
 
 function cccWireForms() {
   // Submissions post to /api/submit-form (a Vercel serverless function that
-  // relays them to Slack). If that call fails for any reason — the function
-  // isn't deployed yet, SLACK_WEBHOOK_URL isn't set, a network hiccup — the
-  // request still reaches the team as a pre-filled email instead of vanishing.
+  // relays them to Slack and emails them to info@4ccs.com). There is no
+  // mailto: fallback: handing the visitor's own email client a pre-filled
+  // draft looks like a successful send but leaves nothing on the team's side,
+  // which is exactly how a failing endpoint went unnoticed.
   document.querySelectorAll("form.form-grid").forEach((form) => {
     form.addEventListener("submit", (e) => {
       e.preventDefault();
+
+      // The browser's own required/type=email checks normally run before this
+      // event fires; re-running them here covers a programmatic submit() and
+      // keeps the same messages the visitor already sees.
+      if (typeof form.reportValidity === "function" && !form.reportValidity()) return;
+
       const fields = [];
+      // Collected by name attribute -- ids and label text are presentation
+      // only, and the server matches on "name" and "email" exactly.
       form.querySelectorAll("input[name], select[name], textarea[name]").forEach((field) => {
         const value = field.value.trim();
         if (!value) return;
-        const label = form.querySelector(`label[for="${field.id}"]`);
-        fields.push({ name: field.name, label: label ? label.textContent : field.name, value });
+        const label = field.id ? form.querySelector(`label[for="${field.id}"]`) : null;
+        fields.push({ name: field.name, label: label ? label.textContent.trim() : field.name, value });
       });
+
+      // Same two rules the server enforces, checked here so an obvious mistake
+      // is caught without a round trip.
+      const named = fields.find((f) => f.name === "name");
+      const emailed = fields.find((f) => f.name === "email");
+      if (!named || !emailed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailed.value)) {
+        cccShowFormError(form, "Please enter your name and a valid email address.");
+        return;
+      }
+
       // data-form-name labels the submission explicitly; otherwise fall back to
       // the heading of the card the form sits in, as before.
       const formName =
@@ -357,30 +402,269 @@ function cccWireForms() {
         submitBtn.disabled = true;
         submitBtn.textContent = "Sending...";
       }
+      const existingError = form.querySelector(".form-error");
+      if (existingError) existingError.remove();
 
+      let succeeded = false;
       fetch("/api/submit-form", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ formName, fields }),
       })
-        .then((res) => {
-          if (!res.ok) throw new Error("submit-form request failed");
-          cccShowFormSuccess(form, false);
+        .then((res) =>
+          // The endpoint sends a visitor-safe { error } string for every 4xx/5xx;
+          // anything unparseable falls back to the generic wording below.
+          res
+            .json()
+            .catch(() => ({}))
+            .then((data) => {
+              if (!res.ok) throw new Error(data && data.error);
+              succeeded = true;
+            })
+        )
+        .then(() => {
+          cccShowFormSuccess(form);
         })
-        .catch(() => {
-          const subject = encodeURIComponent("New inquiry from 4ccs.com");
-          const body = encodeURIComponent(fields.map((f) => `${f.label}: ${f.value}`).join("\n"));
-          window.location.href = `mailto:info@4ccs.com?subject=${subject}&body=${body}`;
-          cccShowFormSuccess(form, true);
+        .catch((err) => {
+          cccShowFormError(
+            form,
+            (err && err.message) ||
+              "Sorry, we couldn't send your message just now. Please try again, or email us directly at <a href=\"mailto:info@4ccs.com\">info@4ccs.com</a>."
+          );
         })
         .finally(() => {
-          if (submitBtn) {
+          // Skipped on success only because the form is no longer in the page.
+          if (submitBtn && !succeeded) {
             submitBtn.disabled = false;
             submitBtn.textContent = originalLabel;
           }
         });
     });
   });
+}
+
+// ---------- Accessibility controls ----------
+// A small reader-preference panel: text size, a more legible font, high
+// contrast, link highlighting, and reduced motion. Settings are written to
+// <html> as data-a11y-* attributes (all the styling hangs off those in
+// style.css) and persisted to localStorage so they survive navigation across
+// the site's pages.
+//
+// These are accessibility enhancements. They do not by themselves constitute
+// an ADA or WCAG conformance claim.
+//
+// The launcher/panel are injected from here rather than written into every
+// page so there is a single copy to maintain, matching how the blueprint
+// backgrounds are handled.
+
+const CCC_A11Y_KEY = "ccc-a11y";
+const CCC_A11Y_SCALES = [90, 100, 112, 125, 150, 175, 200];
+const CCC_A11Y_DEFAULTS = { scale: 100, font: "default", contrast: "off", links: "off", motion: "auto" };
+
+function cccA11yRead() {
+  try {
+    const raw = window.localStorage.getItem(CCC_A11Y_KEY);
+    if (!raw) return { ...CCC_A11Y_DEFAULTS };
+    return { ...CCC_A11Y_DEFAULTS, ...JSON.parse(raw) };
+  } catch (e) {
+    // Private-mode / disabled storage, or corrupt JSON — fall back to defaults
+    // rather than letting the whole shell script fail here.
+    return { ...CCC_A11Y_DEFAULTS };
+  }
+}
+
+function cccA11yWrite(state) {
+  try {
+    window.localStorage.setItem(CCC_A11Y_KEY, JSON.stringify(state));
+  } catch (e) {
+    /* storage unavailable — settings still apply for this page view */
+  }
+}
+
+// Applied to <html> so the attributes are in place before the panel exists;
+// called once at script load (before DOMContentLoaded) to minimise any flash
+// of un-adjusted text, and again on every change.
+function cccA11yApply(state) {
+  const root = document.documentElement;
+  if (state.scale !== 100) {
+    root.setAttribute("data-a11y-scale", String(state.scale));
+    root.style.setProperty("--a11y-scale", state.scale + "%");
+  } else {
+    root.removeAttribute("data-a11y-scale");
+    root.style.removeProperty("--a11y-scale");
+  }
+  const flag = (name, value, off) => {
+    if (value === off) root.removeAttribute(name);
+    else root.setAttribute(name, value);
+  };
+  flag("data-a11y-font", state.font, "default");
+  flag("data-a11y-contrast", state.contrast, "off");
+  flag("data-a11y-links", state.links, "off");
+  flag("data-a11y-motion", state.motion, "auto");
+}
+
+// Run immediately at parse time, not on DOMContentLoaded — the deferred script
+// executes before the event fires, so saved settings land as early as possible.
+let cccA11yState = cccA11yRead();
+cccA11yApply(cccA11yState);
+
+// True when motion should be suppressed, from either the OS setting or the
+// panel. cccInitScrollMotion() consults this before wiring anything up.
+function cccA11yPrefersReducedMotion() {
+  if (cccA11yState.motion === "reduce") return true;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function cccA11yIcon() {
+  // Standard "person" accessibility glyph, decorative — the button carries the
+  // accessible name, so the SVG is hidden from assistive tech.
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="7.6" r="1.2" fill="currentColor" stroke="none"/>
+    <path d="M7.6 10.2h8.8M12 10.6v3.2M12 13.8l-2 4.2M12 13.8l2 4.2"/>
+  </svg>`;
+}
+
+function cccA11yBuildPanel() {
+  const toggle = (key, label, on, off) =>
+    `<button type="button" class="a11y-toggle" data-a11y-toggle="${key}" aria-pressed="false">
+       <span>${label}</span><span class="a11y-state" aria-hidden="true" data-on="${on}" data-off="${off}">${off}</span>
+     </button>`;
+
+  const panel = document.createElement("div");
+  panel.className = "a11y-panel";
+  panel.id = "a11y-panel";
+  panel.hidden = true;
+  // Not a modal: it never blocks the page, so it takes a labelled group rather
+  // than dialog semantics and a focus trap.
+  panel.setAttribute("role", "group");
+  panel.setAttribute("aria-labelledby", "a11y-panel-title");
+  panel.innerHTML = `
+    <h2 id="a11y-panel-title">Accessibility</h2>
+    <p class="a11y-note">Your choices are saved on this device.</p>
+    <div class="a11y-group">
+      <h3 id="a11y-size-label">Text size</h3>
+      <div class="a11y-size-row">
+        <button type="button" data-a11y-size="down" aria-label="Decrease text size">&minus;</button>
+        <output id="a11y-size-value">100%</output>
+        <button type="button" data-a11y-size="up" aria-label="Increase text size">+</button>
+      </div>
+    </div>
+    <div class="a11y-group">
+      <h3>Display</h3>
+      ${toggle("font", "Readable font", "ON", "OFF")}
+      ${toggle("contrast", "High contrast", "ON", "OFF")}
+      ${toggle("links", "Highlight links", "ON", "OFF")}
+      ${toggle("motion", "Reduce motion", "ON", "OFF")}
+    </div>
+    <button type="button" class="a11y-reset" data-a11y-reset>Reset all settings</button>
+    <p class="a11y-sr-only" id="a11y-status" role="status"></p>
+  `;
+  return panel;
+}
+
+function cccInitA11yPanel() {
+  if (document.querySelector(".a11y-launcher")) return;
+
+  const launcher = document.createElement("button");
+  launcher.type = "button";
+  launcher.className = "a11y-launcher";
+  launcher.id = "a11y-launcher";
+  launcher.setAttribute("aria-label", "Accessibility settings");
+  launcher.setAttribute("aria-expanded", "false");
+  launcher.setAttribute("aria-controls", "a11y-panel");
+  launcher.innerHTML = cccA11yIcon();
+
+  const panel = cccA11yBuildPanel();
+  document.body.append(launcher, panel);
+
+  const status = panel.querySelector("#a11y-status");
+  const sizeOut = panel.querySelector("#a11y-size-value");
+  const announce = (msg) => {
+    if (status) status.textContent = msg;
+  };
+
+  const sync = () => {
+    sizeOut.textContent = cccA11yState.scale + "%";
+    panel.querySelectorAll("[data-a11y-toggle]").forEach((btn) => {
+      const key = btn.dataset.a11yToggle;
+      const on = key === "motion" ? cccA11yState.motion === "reduce" : cccA11yState[key] === "on" || cccA11yState[key] === "readable";
+      btn.setAttribute("aria-pressed", String(on));
+      const chip = btn.querySelector(".a11y-state");
+      if (chip) chip.textContent = on ? chip.dataset.on : chip.dataset.off;
+    });
+  };
+
+  const commit = () => {
+    cccA11yApply(cccA11yState);
+    cccA11yWrite(cccA11yState);
+    sync();
+  };
+
+  const setOpen = (open) => {
+    panel.hidden = !open;
+    launcher.setAttribute("aria-expanded", String(open));
+    if (open) {
+      const first = panel.querySelector("button");
+      if (first) first.focus();
+    }
+  };
+
+  launcher.addEventListener("click", () => setOpen(panel.hidden));
+
+  panel.addEventListener("click", (e) => {
+    const step = e.target.closest("[data-a11y-size]");
+    if (step) {
+      const i = CCC_A11Y_SCALES.indexOf(cccA11yState.scale);
+      const at = i === -1 ? CCC_A11Y_SCALES.indexOf(100) : i;
+      const next = at + (step.dataset.a11ySize === "up" ? 1 : -1);
+      if (next < 0 || next >= CCC_A11Y_SCALES.length) {
+        announce("Text size " + cccA11yState.scale + " percent, limit reached");
+        return;
+      }
+      cccA11yState.scale = CCC_A11Y_SCALES[next];
+      commit();
+      announce("Text size " + cccA11yState.scale + " percent");
+      return;
+    }
+
+    const btn = e.target.closest("[data-a11y-toggle]");
+    if (btn) {
+      const key = btn.dataset.a11yToggle;
+      if (key === "font") cccA11yState.font = cccA11yState.font === "readable" ? "default" : "readable";
+      else if (key === "motion") cccA11yState.motion = cccA11yState.motion === "reduce" ? "auto" : "reduce";
+      else cccA11yState[key] = cccA11yState[key] === "on" ? "off" : "on";
+      commit();
+      return;
+    }
+
+    if (e.target.closest("[data-a11y-reset]")) {
+      cccA11yState = { ...CCC_A11Y_DEFAULTS };
+      commit();
+      announce("Accessibility settings reset to defaults");
+    }
+  });
+
+  // Escape closes and returns focus to the launcher, so keyboard users are
+  // never stranded inside the panel.
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !panel.hidden) {
+      setOpen(false);
+      launcher.focus();
+    }
+  });
+
+  // Clicking or tabbing away closes it, but only once focus has genuinely left
+  // both the panel and its launcher.
+  document.addEventListener("pointerdown", (e) => {
+    if (panel.hidden) return;
+    if (!panel.contains(e.target) && !launcher.contains(e.target)) setOpen(false);
+  });
+  document.addEventListener("focusin", (e) => {
+    if (panel.hidden) return;
+    if (!panel.contains(e.target) && !launcher.contains(e.target)) setOpen(false);
+  });
+
+  sync();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -390,6 +674,7 @@ document.addEventListener("DOMContentLoaded", () => {
   cccWireMobileNav();
   cccWireHeaderScroll();
   cccWireForms();
+  cccInitA11yPanel();
   cccInitScrollMotion();
   document.querySelectorAll(".blueprint-bg-slot").forEach((slot, i) => {
     slot.outerHTML = cccBlueprintBg(i);

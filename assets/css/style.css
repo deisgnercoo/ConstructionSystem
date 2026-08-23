@@ -1,4 +1,4 @@
-/* 4C Construction System — premium industrial/architectural design system */
+/* 4C Construction Systems — premium industrial/architectural design system */
 /* Google Fonts are loaded via non-blocking <link> tags in each page's <head>
    (not @import here), so this stylesheet — and the deferred script tag that
    follows it — never wait on a cross-origin font request before applying. */
@@ -595,9 +595,6 @@ p { margin: 0 0 16px; color: var(--color-steel); }
 /* Hero text runs the full header width, from the logo's left edge to the
    "Talk to Us" button's right edge, instead of a narrower centered measure. */
 .page-hero .wrap { position: relative; z-index: 1; max-width: var(--max-width); }
-/* Center each stat as a block instead of ragged-left, so the 4-up row reads
-   as one evenly balanced strip. */
-body[data-page="safe"] .stat-band { text-align: center; }
 /* Overview text column: drop the generic narrow measure and use the full
    grid column width available next to the diagram, with a touch more size. */
 body[data-page="safe"] .overview-grid .section-head { max-width: none; }
@@ -629,6 +626,18 @@ body[data-page="partners"] #customer-types .section-head { max-width: none; }
 body[data-page="partners"] #vendor-network .section-head { max-width: none; }
 body[data-page="partners"] #how-it-works .section-head { max-width: none; }
 body[data-page="partners"] #partner-logos .section-head { max-width: none; }
+/* Manufacturing and Sustainability: intro paragraphs run the full column
+   width instead of the generic 640px measure, with more generous line
+   spacing to keep the longer lines easy to read, and sections sit closer
+   together instead of the default 84px rhythm — matching the wider,
+   tighter treatment already used on the SAFE/ECO and persona pages. */
+body[data-page="manufacturing"] .section-head,
+body[data-page="sustainability"] .section-head { max-width: none; }
+body[data-page="manufacturing"] .section-head p,
+body[data-page="sustainability"] .section-head p,
+body[data-page="manufacturing"] .prose-block p { line-height: 1.9; }
+body[data-page="manufacturing"] section:not(.page-hero),
+body[data-page="sustainability"] section:not(.page-hero) { padding: 56px 0; }
 .page-hero h1 { color: var(--color-white); margin-bottom: 12px; }
 .page-hero p.lede { color: rgba(255,255,255,0.72); font-size: 1.08rem; margin: 0; }
 .breadcrumb-nav {
@@ -890,6 +899,9 @@ section.on-paper-dim { background: var(--color-paper-dim); }
   padding: 48px 0;
   border-top: 1px solid var(--color-line);
   border-bottom: 1px solid var(--color-line);
+  /* Center each stat as a block instead of ragged-left, so the row reads as
+     one evenly balanced strip regardless of how wide each figure is. */
+  text-align: center;
 }
 .stat-band .stat-num {
   font-family: var(--font-mono);
@@ -1240,7 +1252,11 @@ section.full-bleed-hero { padding: 0; }
 @media (min-width: 900px) {
   .flow-diagram { padding: 40px 0 4px; }
   .flow-diagram .flow-track {
-    top: 36px;
+    /* 40px diagram padding-top + 32px (half the 64px icon) = the icons'
+       true vertical center. The line was set to 36px on its own, landing
+       35px above that center — through the number badges instead of the
+       middle of the circles. */
+    top: 72px;
     bottom: auto;
     left: 5%;
     right: 5%;
@@ -1643,6 +1659,15 @@ section.full-bleed-hero { padding: 0; }
 }
 .callout p:last-child { margin-bottom: 0; }
 .callout.form-success { animation: ccc-fade-up var(--dur-hero) var(--ease-out) both; }
+/* Shown in place when a submission can't be delivered, so the form itself
+   stays on the page with the visitor's answers intact. */
+.callout.form-error {
+  border-left-color: #b3261e;
+  background: #fdf3f2;
+  box-shadow: none;
+  padding: 14px 18px;
+  font-size: 0.9rem;
+}
 .callout.on-dark { background: rgba(255,255,255,0.06); border-left-color: var(--color-accent); }
 .callout.on-dark p { color: rgba(255,255,255,0.78); }
 
@@ -1928,4 +1953,283 @@ td { color: var(--color-steel); }
   .cta-band { flex-direction: column; align-items: flex-start; }
   section { padding: 56px 0; }
   .hero { padding: 64px 0 56px; }
+}
+
+/* ---------- Accessibility controls ----------
+   The launcher button and panel are injected by main.js on every page, so the
+   markup lives in one place instead of being duplicated across all pages.
+   Each setting is stored as a data-a11y-* attribute on <html> and persisted to
+   localStorage, which is why every rule below is scoped off the root element:
+   one attribute flip re-styles the whole document with no per-page work.
+
+   These are accessibility *enhancements*. They are not a conformance claim. */
+
+/* Text scaling. Every font-size in this stylesheet is rem-based, so changing
+   the root font-size scales all typography together. Spacing stays in px on
+   purpose — text grows without the layout stretching apart. */
+html[data-a11y-scale] { font-size: var(--a11y-scale, 100%); }
+/* At large scales long unbroken strings would otherwise push the page sideways. */
+html[data-a11y-scale] body { overflow-wrap: break-word; }
+
+/* Readable font. Verdana-first stack: high x-height, open apertures, and
+   already present on essentially every OS, so this costs no extra download. */
+html[data-a11y-font="readable"] {
+  --font-heading: Verdana, "DejaVu Sans", "Segoe UI", Tahoma, sans-serif;
+  --font-sans: Verdana, "DejaVu Sans", "Segoe UI", Tahoma, sans-serif;
+  --font-mono: Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+}
+html[data-a11y-font="readable"] body {
+  line-height: 1.75;
+  letter-spacing: 0.012em;
+  -webkit-font-smoothing: auto;
+}
+html[data-a11y-font="readable"] h1,
+html[data-a11y-font="readable"] h2,
+html[data-a11y-font="readable"] h3,
+html[data-a11y-font="readable"] h4 { letter-spacing: 0; }
+
+/* High contrast. Re-points the palette tokens rather than restyling
+   components, so dark sections (which paint from --color-ink) stay dark and
+   simply get stronger, while light sections go to true black on true white. */
+html[data-a11y-contrast="on"] {
+  --color-ink: #000000;
+  --color-graphite: #000000;
+  --color-steel: #1c1c1c;
+  --color-steel-light: #333333;
+  --color-paper: #ffffff;
+  --color-paper-dim: #ffffff;
+  --color-line: #000000;
+  --color-accent: #005f66;
+  --color-accent-dark: #00454a;
+  --color-accent-tint: #ffffff;
+  --color-purple: #4b2fa8;
+  --color-purple-tint: #ffffff;
+  --color-green: #4a5c12;
+  --color-green-tint: #ffffff;
+  --shadow-card: 0 0 0 1px #000000;
+  --shadow-lift: 0 0 0 2px #000000;
+}
+html[data-a11y-contrast="on"] body { background: #ffffff; color: #000000; }
+html[data-a11y-contrast="on"] p { color: #1c1c1c; }
+/* Dark sections set their own translucent white text; take it to full white. */
+html[data-a11y-contrast="on"] .page-hero p.lede,
+html[data-a11y-contrast="on"] .cta-band p,
+html[data-a11y-contrast="on"] .site-footer,
+html[data-a11y-contrast="on"] .site-footer a,
+html[data-a11y-contrast="on"] .site-footer p { color: #ffffff; }
+/* Photo backdrops sit behind white hero text — hold them well back so the
+   text keeps a solid dark field rather than competing with the image. */
+html[data-a11y-contrast="on"] .hero-photo-bg { opacity: 0.22; }
+html[data-a11y-contrast="on"] .card,
+html[data-a11y-contrast="on"] .project-card,
+html[data-a11y-contrast="on"] .faq-item { border: 1px solid #000000; }
+
+/* Highlight links. Underline plus a tinted band so links are distinguishable
+   without relying on colour alone. */
+html[data-a11y-links="on"] main a:not(.btn),
+html[data-a11y-links="on"] .site-footer a:not(.btn) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 2px;
+  background: #fff3c4;
+  color: #000000;
+  box-shadow: 0 0 0 2px #fff3c4;
+  border-radius: 2px;
+}
+html[data-a11y-links="on"] main a:not(.btn):hover,
+html[data-a11y-links="on"] main a:not(.btn):focus-visible { background: #ffe27a; box-shadow: 0 0 0 2px #ffe27a; }
+html[data-a11y-links="on"] .a11y-panel a { background: none; box-shadow: none; }
+
+/* Reduced motion, driven by the user's choice in the panel. Mirrors the
+   prefers-reduced-motion block near the top of this file so the two routes to
+   "calm the page down" produce the same result. main.js also skips wiring
+   scroll-linked motion at all when this is on. */
+html[data-a11y-motion="reduce"] *,
+html[data-a11y-motion="reduce"] *::before,
+html[data-a11y-motion="reduce"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+html[data-a11y-motion="reduce"] .scroll-reveal,
+html[data-a11y-motion="reduce"] .scroll-reveal-scale { opacity: 1 !important; transform: none !important; }
+html[data-a11y-motion="reduce"] .hero-photo-bg,
+html[data-a11y-motion="reduce"] .hero .wrap,
+html[data-a11y-motion="reduce"] .page-hero .hero-photo-bg,
+html[data-a11y-motion="reduce"] .page-hero .wrap { transform: none !important; opacity: 1 !important; }
+html[data-a11y-motion="reduce"] .logo-marquee-track { animation: none !important; }
+
+/* ---------- Global focus visibility ----------
+   Buttons and nav links already had focus styling; this covers everything else
+   a keyboard can reach (links, inputs, selects, summary) so the focus position
+   is never invisible. :focus-visible keeps it off mouse clicks. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+html[data-a11y-contrast="on"] :focus-visible { outline: 3px solid #000000; outline-offset: 3px; }
+/* Dark backgrounds need a light ring to be visible at all. */
+.page-hero a:focus-visible,
+.hero a:focus-visible,
+.cta-band a:focus-visible,
+.site-footer a:focus-visible,
+.site-header a:focus-visible,
+.site-header button:focus-visible { outline-color: #ffffff; }
+
+/* ---------- Accessibility launcher + panel ---------- */
+.a11y-launcher {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 150;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: var(--color-ink);
+  color: var(--color-white);
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+  transition: background var(--dur-micro) var(--ease-smooth), transform var(--dur-micro) var(--ease-smooth);
+}
+.a11y-launcher:hover { background: var(--color-accent); transform: translateY(-1px); }
+.a11y-launcher svg { width: 26px; height: 26px; display: block; }
+
+.a11y-panel {
+  position: fixed;
+  right: 20px;
+  bottom: 78px;
+  z-index: 151;
+  width: 300px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+  padding: 18px;
+  background: var(--color-white);
+  color: var(--color-graphite);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lift);
+}
+.a11y-panel[hidden] { display: none; }
+.a11y-panel h2 {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  margin: 0 0 4px;
+  color: var(--color-ink);
+}
+.a11y-panel .a11y-note { font-size: 0.75rem; margin: 0 0 14px; color: var(--color-steel); }
+.a11y-group { margin-bottom: 14px; }
+.a11y-group > h3 {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-steel);
+  margin: 0 0 7px;
+}
+.a11y-size-row { display: flex; align-items: center; gap: 8px; }
+.a11y-size-row button {
+  flex: 1;
+  min-height: 40px;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+.a11y-size-row button:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.a11y-size-row output {
+  min-width: 52px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-steel);
+}
+.a11y-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  margin-bottom: 6px;
+  padding: 8px 10px;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  background: var(--color-white);
+  color: var(--color-graphite);
+  cursor: pointer;
+}
+.a11y-toggle:hover { border-color: var(--color-accent); }
+.a11y-toggle .a11y-state {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--color-paper-dim);
+  color: var(--color-steel);
+}
+.a11y-toggle[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-tint);
+  color: var(--color-ink);
+}
+.a11y-toggle[aria-pressed="true"] .a11y-state { background: var(--color-accent); color: var(--color-white); }
+.a11y-reset {
+  width: 100%;
+  min-height: 42px;
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius);
+  background: var(--color-ink);
+  color: var(--color-white);
+  cursor: pointer;
+}
+.a11y-reset:hover { background: var(--color-accent); border-color: var(--color-accent); }
+
+/* Screen-reader-only announcements for changes that have no visible label
+   change of their own (text size stepping). */
+.a11y-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 600px) {
+  .a11y-launcher { right: 14px; bottom: 14px; }
+  .a11y-panel { right: 14px; left: 14px; bottom: 70px; width: auto; max-width: none; }
+}
+
+/* The launcher is a floating control; when printing it is just noise. */
+@media print {
+  .a11y-launcher, .a11y-panel { display: none !important; }
 }
