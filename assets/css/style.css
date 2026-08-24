@@ -621,7 +621,6 @@ body[data-page="about"] section.on-dark .section-head { max-width: none; }
 body[data-page="about"] section.on-dark .section-head h2 { font-size: 2.6rem; }
 body[data-page="about"] section.on-dark .section-head p { font-size: 1.1rem; }
 body[data-page="systems"] #service-options .section-head { max-width: none; }
-body[data-page="systems"] .section-head:has(+ .card-grid) { max-width: none; }
 body[data-page="partners"] #customer-types .section-head { max-width: none; }
 body[data-page="partners"] #vendor-network .section-head { max-width: none; }
 body[data-page="partners"] #how-it-works .section-head { max-width: none; }
@@ -668,6 +667,9 @@ section.on-paper-dim { background: var(--color-paper-dim); }
 .section-head:has(+ .system-grid) { max-width: none; }
 .section-head:has(+ .system-grid) p { font-size: 1.08rem; }
 .section-head:has(+ .stat-band) { max-width: none; }
+.section-head:has(+ .card-grid) { max-width: none; }
+.section-head:has(+ .project-grid) { max-width: none; }
+.section-head:has(+ .location-grid) { max-width: none; }
 
 /* "How We Work With You" intro on the three persona pages: centered, full
    header width, with extra line-height so the paragraph reads as a more
@@ -715,6 +717,17 @@ section.on-paper-dim { background: var(--color-paper-dim); }
 #featured-work .section-head { max-width: none; }
 .section-head:has(+ .video-grid) { max-width: none; }
 .section-head:has(+ .article-columns) { max-width: none; }
+
+/* The long-form prose-block below is centered at 760px (an article-style
+   reading measure); without this, the intro above it sits at the default
+   640px pinned to the left edge, so the kicker/heading and the body copy
+   visually disagree about where the column starts. */
+.section-head:has(+ .prose-block) {
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
 
 /* ---------- Cards ---------- */
 .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }

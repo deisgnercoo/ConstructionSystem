@@ -1,5 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/borrego-springs", "destination": "/borrego-springs.html" },
+    { "source": "/borrego-springs/", "destination": "/borrego-springs.html" }
+  ],
   "headers": [
     {
       "source": "/assets/img/(.*)",
