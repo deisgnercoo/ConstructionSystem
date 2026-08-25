@@ -636,9 +636,13 @@ body[data-page="eco"] section:has(.btn-outline) + section { padding-top: 36px; }
    section-head. Covers both shapes: a feature card followed by the small-card
    grid (architects page), and a feature card on its own (builders page). */
 section:has(> .wrap > .partner-card-grid),
-section:has(> .wrap > .partner-feature) { padding-bottom: 36px; }
+section:has(> .wrap > .partner-feature) { padding-block: 36px; }
 section:has(> .wrap > .partner-card-grid) + section,
 section:has(> .wrap > .partner-feature) + section { padding-top: 36px; }
+/* Trims only the trailing padding of a section, for use on the one directly
+   above a tightened section so the two 84px blocks don't stack into a gap.
+   (A :has() rule can't reach it -- :has() cannot be nested inside :has().) */
+section.tight-bottom { padding-bottom: 36px; }
 /* "Our Mission" section-head, identified by the testimonial that follows it. */
 .section-head:has(+ .testimonial) { max-width: none; }
 body[data-page="about"] section.on-dark .section-head { max-width: none; }
@@ -1555,6 +1559,16 @@ section.full-bleed-hero { padding: 0; }
 @media (hover: hover) and (pointer: fine) {
   .value-split-media:hover img { transform: scale(1.04); }
 }
+/* Technical render rather than a cropped photo. Two adjustments so it sits
+   level with the copy beside it instead of towering over it:
+   - its own proportions, so `contain` has nothing to letterbox (the shared
+     4:3 box would otherwise add dead space above and below a 1.62:1 image);
+   - even columns, since the media side is normally the wider 1.3fr. */
+.value-split:has(.value-split-media.is-diagram) { grid-template-columns: 1fr 1fr; }
+.value-split-media.is-diagram img {
+  aspect-ratio: 1597 / 985;
+  object-fit: contain;
+}
 .value-split-body h2, .value-split-body h3 { margin-bottom: 16px; }
 .value-split-body h2 .accent, .value-split-body h3 .accent { color: var(--color-accent); }
 .value-split-body .kicker { margin-bottom: 10px; }
@@ -1860,16 +1874,34 @@ section.full-bleed-hero { padding: 0; }
 /* ---------- Featured partner (single large card + a grid of smaller ones) ---------- */
 .section-head:has(+ .partner-feature) { max-width: none; }
 .partner-feature {
+  position: relative;
   display: grid;
   grid-template-columns: 260px 1fr;
-  gap: 40px;
-  align-items: center;
+  align-items: stretch;
   background: var(--color-white);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  padding: 40px;
+  /* Padding lives on the two panels instead, so the logo side can carry its
+     own tinted background edge-to-edge rather than floating in white space. */
+  overflow: hidden;
   margin-bottom: 24px;
+  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+}
+/* Accent rule down the leading edge, marking this as the featured partner
+   against the plainer cards below it. */
+.partner-feature::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: var(--color-accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .partner-feature:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+  .partner-feature:hover .partner-feature-logo img { transform: scale(1.04); }
 }
 /* The 24px above spaces the feature card from the small-card grid below it;
    with no grid following, that becomes trailing dead space. */
@@ -1878,16 +1910,37 @@ section.full-bleed-hero { padding: 0; }
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 120px;
+  padding: 40px 32px;
+  background: var(--color-paper);
+  border-right: 1px solid var(--color-line);
 }
 .partner-feature-logo img {
   max-width: 100%;
-  max-height: 80px;
+  max-height: 88px;
   width: auto;
   height: auto;
   mix-blend-mode: multiply;
+  transition: transform var(--dur-base) var(--ease-out);
 }
-.partner-feature-body .kicker { margin-bottom: 10px; }
+.partner-feature-body { padding: 36px 40px; }
+/* Kicker reads as a small badge here so the featured card has a clear label
+   rather than another line of teal text. */
+.partner-feature-body .kicker {
+  margin-bottom: 12px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--color-accent-tint);
+  color: var(--color-accent-dark);
+}
+.partner-feature-body .kicker::before { display: none; }
+@media (max-width: 900px) {
+  .partner-feature-logo {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-line);
+    padding: 32px 24px;
+  }
+  .partner-feature-body { padding: 28px 24px; }
+}
 .partner-feature-body h3 { margin-bottom: 12px; }
 .partner-feature-body p { color: var(--color-steel); margin-bottom: 14px; }
 .partner-feature-body p:last-child { margin-bottom: 0; }
