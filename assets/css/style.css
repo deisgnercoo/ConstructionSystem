@@ -971,11 +971,21 @@ section.on-paper-dim { background: var(--color-paper-dim); }
 /* Same 16:9 shell used as a link, for outlets whose player can't be embedded
    (CBS 8 blocks third-party embedding), so the tile still sits flush beside a
    real embed instead of leaving a ragged grid. */
-a.video-embed { display: block; text-decoration: none; }
+/* Light card rather than the dark base the iframe siblings use: a black
+   panel beside a playing video reads as a dead/failed embed, where a white
+   card reads as a deliberate link. */
+a.video-embed {
+  display: block;
+  text-decoration: none;
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-card);
+}
 a.video-embed:hover { text-decoration: none; }
 @media (hover: hover) and (pointer: fine) {
   a.video-embed { transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out); }
   a.video-embed:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+  a.video-embed:hover .video-link-play { background: var(--color-accent); color: var(--color-white); }
 }
 .video-link-body {
   position: absolute;
@@ -987,22 +997,24 @@ a.video-embed:hover { text-decoration: none; }
   gap: 10px;
   padding: 28px;
   text-align: center;
-  color: var(--color-white);
+  color: var(--color-ink);
 }
 .video-link-play {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.5);
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 4px;
+  transition: background-color var(--dur-base) var(--ease-smooth), color var(--dur-base) var(--ease-smooth);
 }
 .video-link-play svg { width: 18px; height: 18px; margin-left: 3px; }
 .video-link-outlet { font-family: var(--font-heading); font-weight: 800; font-size: 1.5rem; }
-.video-link-title { font-size: 0.92rem; color: rgba(255,255,255,0.75); max-width: 32ch; }
-.video-link-cta { font-size: 0.86rem; font-weight: 600; color: var(--color-accent-tint); }
+.video-link-title { font-size: 0.92rem; color: var(--color-steel); max-width: 32ch; }
+.video-link-cta { font-size: 0.86rem; font-weight: 600; color: var(--color-accent); }
 
 /* ---------- Build-progress photo gallery ---------- */
 .photo-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -1980,109 +1992,6 @@ section.full-bleed-hero { padding: 0; }
 }
 @media (max-width: 640px) {
   .partner-card-grid { grid-template-columns: 1fr; }
-}
-
-/* ---------- Press / "As seen in the news" ---------- */
-/* Intro spans the grid's full width rather than the default 640px measure, so
-   the copy and the cards below it read as one aligned block. */
-.section-head:has(+ .press-grid) { max-width: none; }
-.press-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-}
-.press-item {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 34px 32px 30px;
-  overflow: hidden;
-  background: var(--color-white);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out),
-    border-color var(--dur-base) var(--ease-smooth);
-}
-/* Accent rule that wipes across the top edge on hover, so the card has a
-   deliberate reveal rather than only lifting. */
-.press-item::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--color-accent);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--dur-base) var(--ease-out);
-}
-.press-item:hover { text-decoration: none; }
-@media (hover: hover) and (pointer: fine) {
-  .press-item:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-lift);
-    border-color: var(--color-accent-tint);
-  }
-  .press-item:hover::before { transform: scaleX(1); }
-  .press-item:hover .press-badge { background: var(--color-accent); color: var(--color-white); }
-  .press-item:hover .press-cta svg { transform: translateX(4px); }
-}
-.press-item:focus-visible::before { transform: scaleX(1); }
-
-.press-head { display: flex; align-items: center; gap: 14px; }
-.press-badge {
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--color-accent-tint);
-  color: var(--color-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color var(--dur-base) var(--ease-smooth), color var(--dur-base) var(--ease-smooth);
-}
-.press-badge svg { width: 16px; height: 16px; margin-left: 2px; }
-/* Drop-in slot for the real outlet logo: an <img> here replaces the text
-   wordmark below with no other change needed. */
-.press-item img { max-height: 40px; max-width: 100%; width: auto; height: auto; mix-blend-mode: multiply; }
-.press-wordmark {
-  font-family: var(--font-heading);
-  font-weight: 800;
-  font-size: 1.45rem;
-  letter-spacing: -0.01em;
-  color: var(--color-ink);
-  line-height: 1;
-}
-.press-title {
-  font-family: var(--font-heading);
-  font-weight: 600;
-  font-size: 1.02rem;
-  line-height: 1.4;
-  color: var(--color-ink);
-  margin: 0;
-}
-.press-item .press-cta {
-  margin-top: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--color-accent);
-}
-.press-cta svg {
-  width: 15px;
-  height: 15px;
-  transition: transform var(--dur-base) var(--ease-out);
-}
-@media (max-width: 640px) {
-  .press-grid { grid-template-columns: 1fr; }
-  .press-item { padding: 28px 24px 24px; }
 }
 
 .partner-category-label {
