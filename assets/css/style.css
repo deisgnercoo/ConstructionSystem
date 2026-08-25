@@ -312,11 +312,9 @@ p { margin: 0 0 16px; color: var(--color-steel); }
   height: 12px;
 }
 .main-nav .dropdown-panel {
-  display: none;
   position: absolute;
   top: 100%;
   left: 50%;
-  transform: translateX(-50%);
   background: var(--color-white);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
@@ -324,8 +322,22 @@ p { margin: 0 0 16px; color: var(--color-steel); }
   padding: 10px;
   min-width: 220px;
   margin-top: 12px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, -6px);
+  transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
 }
-.main-nav .dropdown:hover .dropdown-panel { display: block; }
+/* :focus-within, not just :hover, so the panel is reachable by keyboard --
+   visibility flips instantly (not transitioned) so it enters/leaves the tab
+   order exactly when it becomes visible, not mid-fade. */
+.main-nav .dropdown:hover .dropdown-panel,
+.main-nav .dropdown:focus-within .dropdown-panel {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
 .main-nav .dropdown-panel a {
   display: block;
   padding: 9px 12px;
@@ -741,6 +753,7 @@ section.on-paper-dim { background: var(--color-paper-dim); }
 }
 @media (hover: hover) and (pointer: fine) {
   .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+  .card:hover .icon-badge { transform: translateY(-2px) scale(1.06); }
 }
 .card h3 { margin-bottom: 10px; }
 .card p { font-size: 0.94rem; margin-bottom: 0; }
@@ -751,6 +764,7 @@ section.on-paper-dim { background: var(--color-paper-dim); }
   color: var(--color-accent);
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 18px;
+  transition: transform var(--dur-base) var(--ease-out);
 }
 .card .icon-badge svg { width: 24px; height: 24px; }
 /* Who-We-Serve cards with a full background image (home page). Scoped modifier
@@ -1753,9 +1767,19 @@ section.full-bleed-hero { padding: 0; }
   flex-shrink: 0;
   font-family: var(--font-sans);
   margin-left: 16px;
+  display: inline-block;
+  transition: transform var(--dur-base) var(--ease-smooth);
 }
-.faq-item[open] summary::after { content: "\2212"; }
-.faq-item .faq-body { padding: 0 4px 20px; color: var(--color-steel); }
+.faq-item[open] summary::after { transform: rotate(45deg); }
+/* Height is animated from main.js (native <details> can't transition open/
+   closed on its own); overflow stays clipped only while that inline height
+   is set, so wrapped/reflowed content is never cut off once settled open. */
+.faq-item .faq-body {
+  padding: 0 4px 20px;
+  color: var(--color-steel);
+  overflow: hidden;
+  transition: height var(--dur-base) var(--ease-smooth);
+}
 .faq-item .faq-body p:first-child { margin-top: 0; }
 .faq-item .faq-body p:last-child { margin-bottom: 0; }
 

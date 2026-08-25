@@ -328,6 +328,75 @@ function cccInitScrollMotion() {
   window.addEventListener("load", update);
 }
 
+// ---------- FAQ accordion ----------
+// Native <details> opens/closes instantly; this intercepts the click to
+// animate the height instead, while every native behavior stays intact --
+// keyboard toggling, screen-reader open/closed state, and (if this script
+// fails to load) a plain instant-toggling FAQ rather than a broken one.
+//
+// Reduced motion is checked explicitly, live, on every click, rather than
+// left to the CSS's transition-duration:0.001ms override: at a near-zero
+// duration `transitionend` can fail to fire at all, and `details.open`
+// is only ever set back to false from inside that event on the closing
+// path -- so without this check, reduced-motion users would be the ones
+// most likely to end up with a FAQ item stuck open.
+function cccInitFaqAccordion() {
+  document.querySelectorAll(".faq-item").forEach((details) => {
+    const summary = details.querySelector("summary");
+    const body = details.querySelector(".faq-body");
+    if (!summary || !body) return;
+
+    // Runs a from->to height transition, guaranteeing settle() fires exactly
+    // once even if transitionend never does (near-zero duration, the
+    // property never actually changing, or any other edge case).
+    function animateHeight(from, to, settle) {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        body.removeEventListener("transitionend", onEnd);
+        clearTimeout(fallback);
+        settle();
+      };
+      const onEnd = (e) => {
+        if (e.target === body && e.propertyName === "height") finish();
+      };
+      body.style.height = from;
+      body.offsetHeight; // force layout so the change to `to` below actually transitions
+      body.style.height = to;
+      body.addEventListener("transitionend", onEnd);
+      // CSS duration tokens only ever go up to --dur-hero (900ms); 1200ms
+      // comfortably covers every real transition while still recovering
+      // promptly if the event is skipped entirely.
+      const fallback = setTimeout(finish, 1200);
+    }
+
+    // Closing: prevent the native instant close, animate height to 0 first,
+    // and only flip `open` off once that finishes.
+    summary.addEventListener("click", (e) => {
+      if (!details.open) return; // opening is handled by the toggle listener below
+      if (cccA11yPrefersReducedMotion()) return; // let the native instant close happen
+      e.preventDefault();
+      animateHeight(body.getBoundingClientRect().height + "px", "0px", () => {
+        details.open = false;
+        body.style.height = "";
+      });
+    });
+
+    // Opening: `open` is already true by the time `toggle` fires, so the
+    // height is set here before the browser gets a chance to paint the
+    // native (instant, full-height) state.
+    details.addEventListener("toggle", () => {
+      if (!details.open || cccA11yPrefersReducedMotion()) return;
+      animateHeight("0px", body.scrollHeight + "px", () => {
+        // Back to auto so a later resize or content change isn't stuck at
+        // the height captured when it opened.
+        body.style.height = "";
+      });
+    });
+  });
+}
+
 // Replaces the form with the server-confirmed confirmation. Only ever called
 // after /api/submit-form has answered 200, i.e. after Slack and the email have
 // both actually gone out.
@@ -676,6 +745,7 @@ document.addEventListener("DOMContentLoaded", () => {
   cccWireForms();
   cccInitA11yPanel();
   cccInitScrollMotion();
+  cccInitFaqAccordion();
   document.querySelectorAll(".blueprint-bg-slot").forEach((slot, i) => {
     slot.outerHTML = cccBlueprintBg(i);
   });
