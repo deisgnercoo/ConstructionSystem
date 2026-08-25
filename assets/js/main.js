@@ -428,7 +428,8 @@ function cccShowFormError(form, text) {
 
 function cccWireForms() {
   // Submissions post to /api/submit-form (a Vercel serverless function that
-  // relays them to Slack and emails them to info@4ccs.com). There is no
+  // relays them to Slack and emails them to the internal notification
+  // address set as EMAIL_TO in that file). There is no
   // mailto: fallback: handing the visitor's own email client a pre-filled
   // draft looks like a successful send but leaves nothing on the team's side,
   // which is exactly how a failing endpoint went unnoticed.

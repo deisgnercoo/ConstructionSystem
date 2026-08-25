@@ -24,8 +24,11 @@
 // it is a code default rather than required configuration -- one less setting
 // that can be missing or mistyped in a deploy.
 const EMAIL_FROM_DEFAULT = "4C Website <website@send.4ccs.com>";
-// Final destination for every form submission.
-const EMAIL_TO = "info@4ccs.com";
+// Final destination for every form submission. This is the internal
+// notification recipient only -- the address shown to visitors on the site
+// (footer links, the contact page, GENERIC_DELIVERY_ERROR below) is still
+// info@4ccs.com and is deliberately kept separate from this.
+const EMAIL_TO = "denny@4ccs.com";
 // Anchored and rejecting all whitespace, so a value that passes can never
 // carry the CR/LF needed for header injection into the Reply-To.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

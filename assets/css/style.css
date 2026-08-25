@@ -160,6 +160,11 @@ h1, h2, h3, h4 {
   line-height: 1.15;
   margin: 0 0 16px;
   letter-spacing: -0.01em;
+  /* Balances line lengths on multi-line headings instead of the browser's
+     default greedy wrap, which can leave one line much longer than the
+     next. Progressive enhancement -- unsupported browsers just keep the
+     normal wrap, so this is safe with no fallback needed. */
+  text-wrap: balance;
 }
 
 h1 { font-size: clamp(2.4rem, 4.5vw, 3.6rem); font-weight: 800; }
@@ -627,6 +632,13 @@ body[data-page="safe"] section:has(> .wrap > .stat-band) + section,
 body[data-page="eco"] section:has(> .wrap > .stat-band) + section,
 body[data-page="safe"] section:has(.btn-outline) + section,
 body[data-page="eco"] section:has(.btn-outline) + section { padding-top: 36px; }
+/* Same stacked-gap fix for a partner section feeding straight into the next
+   section-head. Covers both shapes: a feature card followed by the small-card
+   grid (architects page), and a feature card on its own (builders page). */
+section:has(> .wrap > .partner-card-grid),
+section:has(> .wrap > .partner-feature) { padding-bottom: 36px; }
+section:has(> .wrap > .partner-card-grid) + section,
+section:has(> .wrap > .partner-feature) + section { padding-top: 36px; }
 /* "Our Mission" section-head, identified by the testimonial that follows it. */
 .section-head:has(+ .testimonial) { max-width: none; }
 body[data-page="about"] section.on-dark .section-head { max-width: none; }
@@ -645,8 +657,7 @@ body[data-page="partners"] #partner-logos .section-head { max-width: none; }
 body[data-page="manufacturing"] .section-head,
 body[data-page="sustainability"] .section-head { max-width: none; }
 body[data-page="manufacturing"] .section-head p,
-body[data-page="sustainability"] .section-head p,
-body[data-page="manufacturing"] .prose-block p { line-height: 1.9; }
+body[data-page="sustainability"] .section-head p { line-height: 1.9; }
 body[data-page="manufacturing"] section:not(.page-hero),
 body[data-page="sustainability"] section:not(.page-hero) { padding: 56px 0; }
 .page-hero h1 { color: var(--color-white); margin-bottom: 12px; }
@@ -682,6 +693,7 @@ section.on-paper-dim { background: var(--color-paper-dim); }
 .section-head:has(+ .card-grid) { max-width: none; }
 .section-head:has(+ .project-grid) { max-width: none; }
 .section-head:has(+ .location-grid) { max-width: none; }
+.section-head:has(+ .flow-diagram) { max-width: none; }
 
 /* "How We Work With You" intro on the three persona pages: centered, full
    header width, with extra line-height so the paragraph reads as a more
@@ -730,19 +742,11 @@ section.on-paper-dim { background: var(--color-paper-dim); }
 .section-head:has(+ .video-grid) { max-width: none; }
 .section-head:has(+ .article-columns) { max-width: none; }
 
-/* The long-form prose-block below is centered at 760px (an article-style
-   reading measure); without this, the intro above it sits at the default
-   640px pinned to the left edge, so the kicker/heading and the body copy
-   visually disagree about where the column starts. */
-.section-head:has(+ .prose-block) {
-  max-width: 760px;
-  margin-left: auto;
-  margin-right: auto;
-  text-align: center;
-}
-
 /* ---------- Cards ---------- */
 .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+/* Opt-in 2x2 for grids holding four cards, which would otherwise leave one
+   card orphaned on a second row under the default three columns. */
+.card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
 .card {
   background: var(--color-white);
   border: 1px solid var(--color-line);
@@ -960,6 +964,41 @@ section.on-paper-dim { background: var(--color-paper-dim); }
   background: var(--color-ink);
 }
 .video-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+/* Same 16:9 shell used as a link, for outlets whose player can't be embedded
+   (CBS 8 blocks third-party embedding), so the tile still sits flush beside a
+   real embed instead of leaving a ragged grid. */
+a.video-embed { display: block; text-decoration: none; }
+a.video-embed:hover { text-decoration: none; }
+@media (hover: hover) and (pointer: fine) {
+  a.video-embed { transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out); }
+  a.video-embed:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+}
+.video-link-body {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px;
+  text-align: center;
+  color: var(--color-white);
+}
+.video-link-play {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.video-link-play svg { width: 18px; height: 18px; margin-left: 3px; }
+.video-link-outlet { font-family: var(--font-heading); font-weight: 800; font-size: 1.5rem; }
+.video-link-title { font-size: 0.92rem; color: rgba(255,255,255,0.75); max-width: 32ch; }
+.video-link-cta { font-size: 0.86rem; font-weight: 600; color: var(--color-accent-tint); }
 
 /* ---------- Build-progress photo gallery ---------- */
 .photo-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -1064,6 +1103,16 @@ section.full-bleed-hero { padding: 0; }
 }
 .slideshow-slide.is-active { opacity: 1; visibility: visible; }
 .slideshow-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Product renders (the exploded assemblies) are transparent PNG/WebP, so the
+   slideshow's dark base shows through and reads as an unintended black box.
+   These sit on a light ground instead, and use contain rather than cover so
+   the full assembly stays visible instead of being cropped top and bottom. */
+.slideshow-slide.is-product { background: var(--color-paper); }
+.slideshow-slide.is-product img {
+  object-fit: contain;
+  padding: 40px;
+  box-sizing: border-box;
+}
 .slideshow-caption {
   position: absolute;
   left: 0; right: 0; bottom: 0;
@@ -1256,10 +1305,6 @@ section.full-bleed-hero { padding: 0; }
 .flow-diagram .flow-node p { color: rgba(255,255,255,0.62); font-size: 0.86rem; margin: 0; max-width: 46ch; }
 .on-paper-dim .flow-diagram .flow-node h3, .on-paper-dim .flow-diagram .flow-node h4 { color: var(--color-ink); }
 .on-paper-dim .flow-diagram .flow-node p { color: var(--color-steel); }
-
-.prose-block p { line-height: 1.7; }
-.prose-block h3 { margin-top: 36px; }
-.prose-block > :first-child { margin-top: 0; }
 
 /* Long-form SEO copy block: split into two columns so it reads as a full-width
    article instead of a narrow strip with wasted space beside it, while each
@@ -1811,6 +1856,182 @@ section.full-bleed-hero { padding: 0; }
 @media (hover: hover) and (pointer: fine) {
   .partner-logo:hover img { transform: scale(1.06); }
 }
+
+/* ---------- Featured partner (single large card + a grid of smaller ones) ---------- */
+.section-head:has(+ .partner-feature) { max-width: none; }
+.partner-feature {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 40px;
+  align-items: center;
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 40px;
+  margin-bottom: 24px;
+}
+/* The 24px above spaces the feature card from the small-card grid below it;
+   with no grid following, that becomes trailing dead space. */
+.partner-feature:last-child { margin-bottom: 0; }
+.partner-feature-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+}
+.partner-feature-logo img {
+  max-width: 100%;
+  max-height: 80px;
+  width: auto;
+  height: auto;
+  mix-blend-mode: multiply;
+}
+.partner-feature-body .kicker { margin-bottom: 10px; }
+.partner-feature-body h3 { margin-bottom: 12px; }
+.partner-feature-body p { color: var(--color-steel); margin-bottom: 14px; }
+.partner-feature-body p:last-child { margin-bottom: 0; }
+
+.partner-card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+.partner-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: 26px 22px;
+  box-shadow: var(--shadow-card);
+  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .partner-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+}
+.partner-card-logo { display: flex; align-items: center; height: 48px; margin-bottom: 16px; }
+.partner-card-logo img { max-width: 100%; max-height: 40px; width: auto; height: auto; mix-blend-mode: multiply; }
+/* Fallback for a firm without a logo asset yet -- styled to read as an
+   intentional wordmark, not a missing image. */
+.partner-card-wordmark {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--color-ink);
+  height: 48px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.partner-card h3 { font-size: 1rem; margin-bottom: 8px; }
+.partner-card p { font-size: 0.9rem; color: var(--color-steel); margin-bottom: 12px; }
+.partner-card p:last-child { margin-bottom: 0; }
+@media (max-width: 900px) {
+  .partner-feature { grid-template-columns: 1fr; }
+  .partner-card-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .partner-card-grid { grid-template-columns: 1fr; }
+}
+
+/* ---------- Press / "As seen in the news" ---------- */
+/* Intro spans the grid's full width rather than the default 640px measure, so
+   the copy and the cards below it read as one aligned block. */
+.section-head:has(+ .press-grid) { max-width: none; }
+.press-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+.press-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 34px 32px 30px;
+  overflow: hidden;
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-smooth);
+}
+/* Accent rule that wipes across the top edge on hover, so the card has a
+   deliberate reveal rather than only lifting. */
+.press-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.press-item:hover { text-decoration: none; }
+@media (hover: hover) and (pointer: fine) {
+  .press-item:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lift);
+    border-color: var(--color-accent-tint);
+  }
+  .press-item:hover::before { transform: scaleX(1); }
+  .press-item:hover .press-badge { background: var(--color-accent); color: var(--color-white); }
+  .press-item:hover .press-cta svg { transform: translateX(4px); }
+}
+.press-item:focus-visible::before { transform: scaleX(1); }
+
+.press-head { display: flex; align-items: center; gap: 14px; }
+.press-badge {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--dur-base) var(--ease-smooth), color var(--dur-base) var(--ease-smooth);
+}
+.press-badge svg { width: 16px; height: 16px; margin-left: 2px; }
+/* Drop-in slot for the real outlet logo: an <img> here replaces the text
+   wordmark below with no other change needed. */
+.press-item img { max-height: 40px; max-width: 100%; width: auto; height: auto; mix-blend-mode: multiply; }
+.press-wordmark {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1.45rem;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+  line-height: 1;
+}
+.press-title {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.02rem;
+  line-height: 1.4;
+  color: var(--color-ink);
+  margin: 0;
+}
+.press-item .press-cta {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+.press-cta svg {
+  width: 15px;
+  height: 15px;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+@media (max-width: 640px) {
+  .press-grid { grid-template-columns: 1fr; }
+  .press-item { padding: 28px 24px 24px; }
+}
+
 .partner-category-label {
   font-family: var(--font-mono);
   font-size: 0.7rem;
@@ -1985,6 +2206,9 @@ td { color: var(--color-steel); }
   .header-cta { padding: 10px 16px; font-size: 0.82rem; margin-left: 8px; }
   .brand .mark-full { height: 40px; }
   .card-grid, .project-grid, .location-grid, .pillar-grid { grid-template-columns: 1fr; }
+  /* Needed explicitly: .card-grid.cols-2 outranks the single-class rule above,
+     so without this the 2x2 grid would stay two-across on phones. */
+  .card-grid.cols-2 { grid-template-columns: 1fr; }
   .stat-band { grid-template-columns: 1fr 1fr; }
   .footer-grid { grid-template-columns: 1fr; }
   .cta-band { flex-direction: column; align-items: flex-start; }
