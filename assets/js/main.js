@@ -321,7 +321,7 @@ function cccInitScrollMotion() {
     window.requestAnimationFrame(update);
   };
 
-  update();
+  update(); 
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", onScroll, { passive: true });
   // Images finishing late can shift layout; recompute once they settle.
