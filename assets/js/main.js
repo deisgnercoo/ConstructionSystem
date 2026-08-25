@@ -325,7 +325,7 @@ function cccInitScrollMotion() {
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", onScroll, { passive: true });
   // Images finishing late can shift layout; recompute once they settle.
-  window.addEventListener("load", update);
+  window.addEventListener("load", update); 
 }
 
 // ---------- FAQ accordion ----------
