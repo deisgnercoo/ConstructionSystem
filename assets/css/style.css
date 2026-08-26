@@ -643,6 +643,14 @@ section:has(> .wrap > .partner-feature) + section { padding-top: 36px; }
    above a tightened section so the two 84px blocks don't stack into a gap.
    (A :has() rule can't reach it -- :has() cannot be nested inside :has().) */
 section.tight-bottom { padding-bottom: 36px; }
+/* Same stacked-84px gap into the "As seen in the news" section from
+   whichever section precedes it -- #why-not-x on the homepage, the mission
+   testimonial on about.html. Both selectors are inherently page-specific
+   (that id and .testimonial each exist on exactly one page), so no extra
+   scoping is needed. */
+section:has(> .wrap > .video-grid) { padding-top: 36px; }
+#why-not-x { padding-bottom: 36px; }
+section:has(> .wrap > .testimonial) { padding-bottom: 36px; }
 /* "Our Mission" section-head, identified by the testimonial that follows it. */
 .section-head:has(+ .testimonial) { max-width: none; }
 body[data-page="about"] section.on-dark .section-head { max-width: none; }
@@ -753,6 +761,14 @@ section.on-paper-dim { background: var(--color-paper-dim); }
 #featured-work .section-head { max-width: none; }
 .section-head:has(+ .video-grid) { max-width: none; }
 .section-head:has(+ .article-columns) { max-width: none; }
+.section-head:has(+ .callout) { max-width: none; }
+.section-head:has(+ .finish-option) { max-width: none; }
+.section-head:has(+ .step-list) { max-width: none; }
+/* A section-head that's the sole content in its section (paired with a
+   single outline CTA, no grid/list sibling to key off) -- same "text
+   stops at 640px inside a much wider box" issue as the :has(+ ...) cases
+   above, just with no sibling to select on. */
+.section-head:has(.btn-outline) { max-width: none; }
 
 /* ---------- Cards ---------- */
 .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
@@ -811,10 +827,14 @@ section.on-paper-dim { background: var(--color-paper-dim); }
 .card.serve-card a:hover { color: var(--color-accent); }
 
 /* ---------- Alternatives comparison bracket ---------- */
-.compare-bracket { display: grid; grid-template-columns: 1fr 70px 1fr; align-items: stretch; }
-.compare-alt-list { display: flex; flex-direction: column; gap: 22px; justify-content: space-between; }
+.compare-bracket { display: grid; grid-template-columns: 1fr 140px 1fr; align-items: stretch; gap: 8px; }
+/* space-between distributes the leftover height (list height matches the
+   4C panel's height via grid align-items: stretch) evenly as gaps between
+   the 3 cards, so the stack spans the same top-to-bottom range as the
+   panel instead of floating centered with empty space above/below it. */
+.compare-alt-list { display: flex; flex-direction: column; gap: 16px; justify-content: space-between; }
 .compare-alt-card {
-  background: var(--color-white);
+  background: var(--color-paper-dim);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
   padding: 24px 26px;
@@ -822,24 +842,41 @@ section.on-paper-dim { background: var(--color-paper-dim); }
   display: flex;
   align-items: center;
   gap: 18px;
-  flex: 1;
+  /* Content-sized, not stretched -- the list's own height still matches the
+     4C panel's height (grid align-items: stretch), but that leftover space
+     becomes bigger gaps BETWEEN cards via justify-content: space-between,
+     instead of taller cards with empty top/bottom padding. */
+  flex: 0 0 auto;
   transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   .compare-alt-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
 }
 .compare-alt-icon {
-  width: 48px; height: 48px;
+  width: 40px; height: 40px;
   border-radius: 50%;
   background: var(--color-accent-tint);
   color: var(--color-accent);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.compare-alt-icon svg { width: 24px; height: 24px; }
+.compare-alt-icon svg { width: 20px; height: 20px; stroke-width: 1.6; }
 .compare-alt-card h3 { font-size: 1.05rem; color: var(--color-accent); margin-bottom: 8px; }
 .compare-alt-card p { font-size: 0.86rem; color: var(--color-ink); margin: 2px 0; }
-.compare-bracket-svg { width: 100%; height: 100%; color: var(--color-ink); }
+/* Drawn live by cccInitCompareConnector() in main.js, which measures each
+   card's actual center and redraws the path -- so it always lines up with
+   the cards exactly, even if their heights change (longer copy, a11y font
+   scaling, a new breakpoint), instead of relying on a fixed-proportion
+   raster asset that can only ever line up by coincidence.
+   The svg is taken out of flow (position: absolute) so its static markup
+   viewBox (a tall 64x511 placeholder, before JS replaces it) can never
+   contribute its own intrinsic aspect ratio back into the grid row's
+   auto-sizing -- that circular dependency is what inflated the whole row
+   height and left the 4C panel's content floating in empty space. */
+.compare-bracket-media { position: relative; width: 100%; height: 100%; }
+.compare-connector { display: block; position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.compare-connector-line { fill: none; stroke: var(--color-ink); stroke-width: 2.5; stroke-linecap: butt; stroke-linejoin: miter; }
+.compare-connector-dot { fill: var(--color-ink); }
 .compare-4c-panel {
   background: var(--color-accent);
   color: var(--color-white);
@@ -852,9 +889,9 @@ section.on-paper-dim { background: var(--color-paper-dim); }
 }
 .compare-4c-panel h3 { color: var(--color-white); font-size: 1.5rem; margin: 0; }
 .compare-4c-col h4 { color: var(--color-white); font-size: 1rem; margin-bottom: 12px; }
-.compare-4c-col ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.compare-4c-col ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .compare-4c-col li { position: relative; padding-left: 20px; font-size: 0.94rem; color: rgba(255,255,255,0.92); }
-.compare-4c-col li::before { content: "\2022"; position: absolute; left: 2px; color: rgba(255,255,255,0.7); }
+.compare-4c-col li::before { content: ""; position: absolute; left: 2px; top: 0.55em; width: 5px; height: 5px; background: rgba(255,255,255,0.7); }
 
 /* ---------- System comparison cards ---------- */
 .system-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
@@ -983,17 +1020,35 @@ section.on-paper-dim { background: var(--color-paper-dim); }
    panel beside a playing video reads as a dead/failed embed, where a white
    card reads as a deliberate link. */
 a.video-embed {
+  position: relative;
   display: block;
   text-decoration: none;
-  background: var(--color-white);
+  background: radial-gradient(120% 140% at 85% 100%, var(--color-accent-tint) 0%, var(--color-white) 55%);
   border: 1px solid var(--color-line);
   box-shadow: var(--shadow-card);
+  overflow: hidden;
 }
 a.video-embed:hover { text-decoration: none; }
+/* Thin accent bar along the bottom, revealed on hover -- the same "now
+   playing" affordance the iframe tiles get for free from the video itself. */
+a.video-embed::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-dark));
+  opacity: 0;
+  transform: scaleX(0.6);
+  transform-origin: center;
+}
 @media (hover: hover) and (pointer: fine) {
   a.video-embed { transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out); }
   a.video-embed:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
-  a.video-embed:hover .video-link-play { background: var(--color-accent); color: var(--color-white); }
+  a.video-embed:hover .video-link-play { background: var(--color-accent); color: var(--color-white); box-shadow: 0 8px 20px rgba(0, 138, 153, 0.35); }
+  a.video-embed:hover::after { opacity: 1; transform: scaleX(1); }
+  a.video-embed::after { transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); }
 }
 .video-link-body {
   position: absolute;
@@ -1002,27 +1057,41 @@ a.video-embed:hover { text-decoration: none; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   padding: 28px;
   text-align: center;
   color: var(--color-ink);
 }
+/* Play button and the outlet's own logo, as one centered horizontal pair. */
+.video-link-brand { display: flex; align-items: center; gap: 16px; margin-bottom: 6px; }
 .video-link-play {
-  width: 46px;
-  height: 46px;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
   border-radius: 50%;
-  background: var(--color-accent-tint);
+  background: var(--color-white);
   color: var(--color-accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 4px;
+  box-shadow: 0 6px 16px rgba(0, 138, 153, 0.18), inset 0 0 0 1px var(--color-accent-tint);
+  transition: background-color var(--dur-base) var(--ease-smooth), color var(--dur-base) var(--ease-smooth), box-shadow var(--dur-base) var(--ease-smooth);
+}
+.video-link-play svg { width: 20px; height: 20px; margin-left: 3px; }
+.video-link-logo { width: 50px; height: 50px; border-radius: var(--radius-lg); display: block; box-shadow: var(--shadow-card); }
+.video-link-title { font-size: 0.96rem; font-weight: 600; color: var(--color-ink); max-width: 32ch; }
+.video-link-cta {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--color-accent-tint);
   transition: background-color var(--dur-base) var(--ease-smooth), color var(--dur-base) var(--ease-smooth);
 }
-.video-link-play svg { width: 18px; height: 18px; margin-left: 3px; }
-.video-link-outlet { font-family: var(--font-heading); font-weight: 800; font-size: 1.5rem; }
-.video-link-title { font-size: 0.92rem; color: var(--color-steel); max-width: 32ch; }
-.video-link-cta { font-size: 0.86rem; font-weight: 600; color: var(--color-accent); }
+@media (hover: hover) and (pointer: fine) {
+  a.video-embed:hover .video-link-cta { background: var(--color-accent); color: var(--color-white); }
+}
 
 /* ---------- Build-progress photo gallery ---------- */
 .photo-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -2125,7 +2194,7 @@ td { color: var(--color-steel); }
   .card-grid, .project-grid, .location-grid { grid-template-columns: repeat(2, 1fr); }
   .system-grid { grid-template-columns: 1fr; }
   .compare-bracket { grid-template-columns: 1fr; gap: 28px; }
-  .compare-bracket-svg { display: none; }
+  .compare-bracket-media { display: none; }
   .stat-band { grid-template-columns: repeat(2, 1fr); }
   .footer-grid { grid-template-columns: 1fr 1fr; }
   .form-grid { grid-template-columns: 1fr; }
