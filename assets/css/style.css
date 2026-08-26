@@ -686,6 +686,14 @@ section.on-dark { background: var(--color-ink); color: var(--color-white); }
 section.on-dark h2, section.on-dark h3 { color: var(--color-white); }
 section.on-paper-dim { background: var(--color-paper-dim); }
 .section-head { max-width: 640px; margin-bottom: 48px; }
+/* That 48px spaces the head from the content beneath it. In a section whose
+   only content IS the head, it stacks onto the section's own padding-bottom
+   and makes the block sit visibly off-centre (84px above, 132px below).
+   The trailing paragraph's own 16px margin lands the same way, so it's
+   cleared too -- scoped to :last-child so heads that do sit above content
+   keep their normal 48px + 16px separation. */
+.section-head:last-child { margin-bottom: 0; }
+.section-head:last-child > :last-child { margin-bottom: 0; }
 .section-head.center { margin-left: auto; margin-right: auto; text-align: center; }
 
 /* Section intros that sit directly above a full-width grid (e.g. the SAFE/ECO
@@ -1968,20 +1976,6 @@ section.full-bleed-hero { padding: 0; }
 }
 @media (hover: hover) and (pointer: fine) {
   .partner-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
-}
-.partner-card-logo { display: flex; align-items: center; height: 48px; margin-bottom: 16px; }
-.partner-card-logo img { max-width: 100%; max-height: 40px; width: auto; height: auto; mix-blend-mode: multiply; }
-/* Fallback for a firm without a logo asset yet -- styled to read as an
-   intentional wordmark, not a missing image. */
-.partner-card-wordmark {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: var(--color-ink);
-  height: 48px;
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
 }
 .partner-card h3 { font-size: 1rem; margin-bottom: 8px; }
 .partner-card p { font-size: 0.9rem; color: var(--color-steel); margin-bottom: 12px; }
