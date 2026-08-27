@@ -6,3 +6,7 @@ Portfolio-20260731T110708Z-1-001.zip
 .env.local
 .env.*.local
 .vercel
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore
