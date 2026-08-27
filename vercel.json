@@ -2,7 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     { "source": "/borrego-springs", "destination": "/borrego-springs.html" },
-    { "source": "/borrego-springs/", "destination": "/borrego-springs.html" }
+    { "source": "/borrego-springs/", "destination": "/borrego-springs.html" },
+    { "source": "/escondido", "destination": "/escondido.html" },
+    { "source": "/escondido/", "destination": "/escondido.html" },
+    { "source": "/rialto", "destination": "/rialto.html" },
+    { "source": "/rialto/", "destination": "/rialto.html" }
   ],
   "headers": [
     {
