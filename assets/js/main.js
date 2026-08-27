@@ -426,6 +426,22 @@ function cccShowFormError(form, text) {
   box.innerHTML = `<p>${text}</p>`;
 }
 
+// Where the contact/partner forms POST. Resolved per environment so the same
+// build works everywhere:
+//   - localhost / 127.0.0.1 -> relative, so local testing hits the local dev
+//     server's own function and never sends real mail from a dev machine.
+//   - *.vercel.app          -> relative, because there the page and the
+//     function are the same origin (no CORS involved).
+//   - anything else (Bluehost, 4ccs.com) -> absolute to Vercel, since
+//     Bluehost is static-only and has no /api to serve.
+const CCC_FORM_ENDPOINT = (function () {
+  const h = window.location.hostname;
+  if (h === "localhost" || h === "127.0.0.1" || h.endsWith(".vercel.app")) {
+    return "/api/submit-form";
+  }
+  return "https://construction-system-sage.vercel.app/api/submit-form";
+})();
+
 function cccWireForms() {
   // Submissions post to /api/submit-form (a Vercel serverless function that
   // relays them to Slack and emails them to the internal notification
@@ -476,7 +492,13 @@ function cccWireForms() {
       if (existingError) existingError.remove();
 
       let succeeded = false;
-      fetch("/api/submit-form", {
+      // Absolute, not relative: the site is served from Bluehost but this
+      // endpoint is a Vercel serverless function, so a relative path would
+      // resolve to Bluehost (which has no /api) and 404. The Vercel side
+      // allow-lists 4ccs.com/www.4ccs.com for CORS. If the Vercel project is
+      // ever renamed, or a custom api.4ccs.com domain is added, this is the
+      // single line that changes.
+      fetch(CCC_FORM_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ formName, fields }),

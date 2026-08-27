@@ -163,9 +163,38 @@ async function sendEmail(apiKey, from, formName, fields, replyTo) {
   }
 }
 
+// The site is served from Bluehost while this function stays on Vercel, so
+// every real submission is now cross-origin. Only these exact origins are
+// answered; anything else gets no Access-Control-Allow-Origin header at all,
+// which is what makes the browser refuse the response. Listed explicitly
+// rather than "*" so a hostile page can't POST through a visitor's browser.
+const ALLOWED_ORIGINS = new Set([
+  "https://4ccs.com",
+  "https://www.4ccs.com",
+]);
+
 export default async function handler(req, res) {
+  // Echo the origin back only when it is on the allowlist. Vary: Origin keeps
+  // a CDN from caching one origin's CORS answer and serving it to another.
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+
+  // The form posts Content-Type: application/json, which is not a "simple"
+  // request, so the browser sends this preflight first. It has to be answered
+  // before the POST is ever attempted -- without it every submission fails.
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Max-Age", "86400");
+    res.status(204).end();
+    return;
+  }
+
   if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
+    res.setHeader("Allow", "POST, OPTIONS");
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
