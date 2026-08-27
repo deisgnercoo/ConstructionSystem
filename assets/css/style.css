@@ -827,7 +827,7 @@ section.on-paper-dim { background: var(--color-paper-dim); }
 .card.serve-card a:hover { color: var(--color-accent); }
 
 /* ---------- Alternatives comparison bracket ---------- */
-.compare-bracket { display: grid; grid-template-columns: 1fr 140px 1fr; align-items: stretch; gap: 8px; }
+.compare-bracket { display: grid; grid-template-columns: 1fr 140px 1fr; align-items: stretch; gap: 0; }
 /* space-between distributes the leftover height (list height matches the
    4C panel's height via grid align-items: stretch) evenly as gaps between
    the 3 cards, so the stack spans the same top-to-bottom range as the
@@ -863,20 +863,12 @@ section.on-paper-dim { background: var(--color-paper-dim); }
 .compare-alt-icon svg { width: 20px; height: 20px; stroke-width: 1.6; }
 .compare-alt-card h3 { font-size: 1.05rem; color: var(--color-accent); margin-bottom: 8px; }
 .compare-alt-card p { font-size: 0.86rem; color: var(--color-ink); margin: 2px 0; }
-/* Drawn live by cccInitCompareConnector() in main.js, which measures each
-   card's actual center and redraws the path -- so it always lines up with
-   the cards exactly, even if their heights change (longer copy, a11y font
-   scaling, a new breakpoint), instead of relying on a fixed-proportion
-   raster asset that can only ever line up by coincidence.
-   The svg is taken out of flow (position: absolute) so its static markup
-   viewBox (a tall 64x511 placeholder, before JS replaces it) can never
-   contribute its own intrinsic aspect ratio back into the grid row's
-   auto-sizing -- that circular dependency is what inflated the whole row
+/* The img is taken out of flow (position: absolute) so its own intrinsic
+   aspect ratio can never contribute back into the grid row's auto-sizing --
+   that circular dependency is what previously inflated the whole row
    height and left the 4C panel's content floating in empty space. */
 .compare-bracket-media { position: relative; width: 100%; height: 100%; }
-.compare-connector { display: block; position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.compare-connector-line { fill: none; stroke: var(--color-ink); stroke-width: 2.5; stroke-linecap: butt; stroke-linejoin: miter; }
-.compare-connector-dot { fill: var(--color-ink); }
+.compare-bracket-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
 .compare-4c-panel {
   background: var(--color-accent);
   color: var(--color-white);

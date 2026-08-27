@@ -737,76 +737,6 @@ function cccInitA11yPanel() {
   sync();
 }
 
-// Draws the wire connecting each comparison card to the 4C panel by
-// measuring real card centers, instead of a fixed-proportion SVG/image that
-// can only ever line up by coincidence -- see the comment above
-// .compare-bracket-media in style.css.
-function cccInitCompareConnector() {
-  const brackets = document.querySelectorAll(".compare-bracket");
-  if (!brackets.length) return;
-
-  const layout = (bracket) => {
-    const media = bracket.querySelector(".compare-bracket-media");
-    const svg = media && media.querySelector(".compare-connector");
-    const cards = bracket.querySelectorAll(".compare-alt-card");
-    const panel = bracket.querySelector(".compare-4c-panel");
-    if (!svg || cards.length < 3 || !panel) return;
-
-    const mediaBox = media.getBoundingClientRect();
-    const w = mediaBox.width;
-    const h = mediaBox.height;
-    if (w <= 0 || h <= 0) return;
-
-    const cardYs = Array.prototype.map.call(cards, (card) => {
-      const r = card.getBoundingClientRect();
-      return r.top + r.height / 2 - mediaBox.top;
-    });
-    const topY = cardYs[0];
-    const midY = cardYs[1];
-    const bottomY = cardYs[cardYs.length - 1];
-
-    const x0 = 0;
-    const spineX = w * 0.5;
-    const endX = w;
-
-    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-    // Sharp 90-degree joins only -- a straight horizontal stub from each
-    // card meeting one straight vertical spine, no curves or rounded elbows.
-    const spine = `M${x0},${topY} H${spineX} V${bottomY} H${x0}`;
-    const trunk = `M${x0},${midY} H${endX}`;
-    svg.querySelector(".compare-connector-line").setAttribute("d", `${spine} ${trunk}`);
-
-    const placeDot = (role, x, y) => {
-      const dot = svg.querySelector(`[data-role="${role}"]`);
-      if (dot) {
-        dot.setAttribute("cx", x);
-        dot.setAttribute("cy", y);
-      }
-    };
-    placeDot("card1", x0, topY);
-    placeDot("card2", x0, midY);
-    placeDot("card3", x0, bottomY);
-    placeDot("end", endX, midY);
-  };
-
-  const layoutAll = () => brackets.forEach(layout);
-  layoutAll();
-  window.addEventListener("load", layoutAll);
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(layoutAll);
-  }
-
-  let resizeRaf = null;
-  window.addEventListener(
-    "resize",
-    () => {
-      if (resizeRaf) cancelAnimationFrame(resizeRaf);
-      resizeRaf = requestAnimationFrame(layoutAll);
-    },
-    { passive: true }
-  );
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   cccRenderHeader();
   cccRenderFooter();
@@ -817,7 +747,6 @@ document.addEventListener("DOMContentLoaded", () => {
   cccInitA11yPanel();
   cccInitScrollMotion();
   cccInitFaqAccordion();
-  cccInitCompareConnector();
   document.querySelectorAll(".blueprint-bg-slot").forEach((slot, i) => {
     slot.outerHTML = cccBlueprintBg(i);
   });
