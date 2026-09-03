@@ -1635,10 +1635,12 @@ section.full-bleed-hero { padding: 0; }
    own 0-1 progress to --lp (opacity) and --ly (the remaining rise), every
    frame, straight from scroll position -- no CSS transition, so it tracks the
    scrollbar 1:1 and reverses on the way back up. */
-/* Runs tight to the logo marquee above it: the section already opens with a
-   lot of quiet space around the drawing, so the standard 84px section lead-in
-   on top of the marquee's own padding read as a hole in the page. */
-#one-system { padding-top: 40px; }
+/* Runs tight to the sections either side of it: this one already carries a
+   lot of quiet space around the drawing, so the standard 84px section padding
+   -- stacked on the marquee's above and the next section's below -- read as
+   holes in the page rather than as rhythm. */
+#one-system { padding-top: 40px; padding-bottom: 40px; }
+#one-system + section { padding-top: 56px; }
 .exploded-scroll { display: grid; grid-template-columns: 0.86fr 1fr; gap: 64px; margin-top: 8px; }
 .exploded-scroll-media { position: relative; align-self: stretch; }
 .exploded-scroll-visual {
@@ -1694,7 +1696,7 @@ section.full-bleed-hero { padding: 0; }
    cccInitExplodedScroll maps the layer reveals onto that pinned window. The
    top padding stays small so step 01 starts level with the top of the drawing
    rather than stranded well below it. */
-.exploded-scroll-steps { position: relative; display: flex; flex-direction: column; gap: 18vh; padding: 0 0 10vh; }
+.exploded-scroll-steps { position: relative; display: flex; flex-direction: column; gap: 18vh; padding: 0 0 4vh; }
 /* Progress rail: a thin track running behind the step numbers with an
    accent fill that rises as --rail-p climbs, so the assembly reads as one
    continuous journey rather than three separate call-outs. */
@@ -1703,7 +1705,10 @@ section.full-bleed-hero { padding: 0; }
   position: absolute;
   left: 11px;
   top: 15px;
-  bottom: 10vh;
+  /* Runs dot-centre to dot-centre. The last step's height depends on its copy,
+     so cccInitExplodedScroll measures the span and publishes it as --rail-len;
+     the fallback keeps a sensible line if that never runs. */
+  height: var(--rail-len, calc(100% - 4vh - 15px));
   width: 2px;
   background: var(--color-line);
 }
@@ -1713,7 +1718,7 @@ section.full-bleed-hero { padding: 0; }
   left: 11px;
   top: 15px;
   width: 2px;
-  height: calc(var(--rail-p, 0) * (100% - 10vh - 15px));
+  height: calc(var(--rail-p, 0) * var(--rail-len, calc(100% - 4vh - 15px)));
   background: var(--color-accent);
 }
 .exploded-scroll-step {
@@ -1739,7 +1744,7 @@ section.full-bleed-hero { padding: 0; }
   transform: scale(calc(0.72 + var(--sp, 1) * 0.28));
 }
 .exploded-scroll-step.is-current::before { border-color: var(--color-accent); background: var(--color-accent); }
-.exploded-step-num { display: block; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.1em; color: var(--color-accent); line-height: 1; margin-bottom: 12px; }
+.exploded-step-num { display: block; font-family: var(--font-mono); font-size: 1.15rem; font-weight: 500; letter-spacing: 0.08em; color: var(--color-accent); line-height: 1; margin-bottom: 10px; }
 .exploded-scroll-step h3 { margin-bottom: 8px; transform: translateX(calc((1 - var(--sp, 1)) * 10px)); }
 .exploded-scroll-step p { color: var(--color-steel); margin: 0; }
 

@@ -444,6 +444,7 @@ function cccInitExplodedScroll() {
 
     if (rail) {
       const span = (steps.length - 1) * STRIDE + BAND;
+      rail.style.setProperty("--rail-len", railLen.toFixed(1) + "px");
       rail.style.setProperty("--rail-p", clamp01((p - LEAD) / span).toFixed(4));
     }
   };
@@ -451,6 +452,10 @@ function cccInitExplodedScroll() {
   let raf = null;
   let shown = null;
   let painted = -1;
+  // Distance between the first and last step markers -- the rail stops at the
+  // last dot rather than trailing past it. Measured rather than hard-coded
+  // because the final step's height depends on how its copy wraps.
+  let railLen = 0;
   const schedule = () => {
     if (raf === null) raf = window.requestAnimationFrame(tick);
   };
@@ -459,6 +464,12 @@ function cccInitExplodedScroll() {
     raf = null;
     const vh = window.innerHeight || document.documentElement.clientHeight;
     const rect = media.getBoundingClientRect();
+    // Both markers sit the same distance below their step's top, so the gap
+    // between the step boxes is exactly the dot-centre-to-dot-centre span.
+    railLen = Math.max(
+      steps[steps.length - 1].getBoundingClientRect().top - steps[0].getBoundingClientRect().top,
+      0
+    );
     const target = targetProgress(rect, vh);
     if (shown === null) shown = target;
     const gap = target - shown;
