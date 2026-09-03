@@ -357,10 +357,11 @@ function cccInitScrollMotion() {
 function cccInitExplodedScroll() {
   const media = document.querySelector(".exploded-scroll-media");
   const visual = document.querySelector(".exploded-scroll-visual");
+  const track = document.querySelector(".exploded-layer-track");
   const rail = document.querySelector(".exploded-scroll-steps");
   const steps = Array.from(document.querySelectorAll(".exploded-scroll-step"));
   const slides = Array.from(document.querySelectorAll(".exploded-layer-slide"));
-  if (!media || !visual || !steps.length || !slides.length) return;
+  if (!media || !visual || !track || !steps.length || !slides.length) return;
 
   // Deliberately NOT gated on cccA11yPrefersReducedMotion() like the other
   // scroll-driven systems in this file: --lp here decides *whether* a layer
@@ -380,19 +381,29 @@ function cccInitExplodedScroll() {
   // -- and guarantees the order never depends on text length. Everything is
   // done well before the end of the window, so the finished exploded view gets
   // a long hold before the frame lets go.
-  const LEAD = 0.05;
+  const LEAD = 0.02;
   const STRIDE = 0.29;
   const BAND = 0.26;
   // Where the frame is on screen when the sequence starts, as a share of the
-  // viewport: high enough that the frame is essentially fully visible, so it's
-  // never left sitting empty while the visitor scrolls toward it.
-  const APPROACH_AT = 0.42;
+  // viewport. Set low in the viewport on purpose: the roof begins rising the
+  // moment the frame appears, so it's never left sitting empty.
+  const APPROACH_AT = 0.6;
+  // How the frame is composed at each stage -- roof only, roof + partitions,
+  // all three. Alone, the roof is nudged down and scaled up so it sits centred
+  // rather than stranded at the top; each layer that joins pulls back toward
+  // the settled 1:1 view.
+  const STAGE_SHIFT = [35.3, 16, 0];
+  const STAGE_SCALE = [1.18, 1.08, 1];
 
-  let ticking = false;
-  const update = () => {
-    ticking = false;
-    const vh = window.innerHeight || document.documentElement.clientHeight;
-    const rect = media.getBoundingClientRect();
+  // A wheel notch arrives as one discrete jump, so mapping scroll position
+  // straight onto the drawing makes it step rather than glide. The rendered
+  // progress instead chases the scroll-derived target a fraction of the
+  // remaining distance each frame, which turns those jumps into continuous
+  // motion. Reduced motion snaps straight to the target -- no easing means
+  // nothing keeps moving after the visitor stops scrolling.
+  const EASE = cccA11yPrefersReducedMotion() ? 1 : 0.12;
+
+  const targetProgress = (rect, vh) => {
     const pinTop = parseFloat(getComputedStyle(visual).top) || 0;
     const line = vh * APPROACH_AT;
     // Two phases share one progress track: the frame rising to its pin point,
@@ -400,8 +411,10 @@ function cccInitExplodedScroll() {
     // inside its column before it lets go).
     const approach = Math.max(line - pinTop, 1);
     const travel = Math.max(rect.height - visual.offsetHeight, 1);
-    const p = clamp01((line - rect.top) / (approach + travel));
+    return clamp01((line - rect.top) / (approach + travel));
+  };
 
+  const render = (p) => {
     let current = steps[0] || null;
     steps.forEach((step, i) => {
       const sp = easeOut(clamp01((p - (LEAD + i * STRIDE)) / BAND));
@@ -410,14 +423,24 @@ function cccInitExplodedScroll() {
     });
     steps.forEach((step) => step.classList.toggle("is-current", step === current));
 
+    const revealed = [];
     slides.forEach((slide) => {
       const i = Math.max(Number(slide.dataset.step || 1) - 1, 0);
       // Own band only -- once it reaches 1 it stays there, which is what makes
       // the assembly cumulative rather than a hand-off.
       const lp = easeOut(clamp01((p - (LEAD + i * STRIDE)) / BAND));
+      revealed[i] = lp;
       slide.style.setProperty("--lp", lp.toFixed(4));
       slide.style.setProperty("--ly", ((1 - lp) * RISE_PX).toFixed(2) + "px");
     });
+
+    // Re-frame as layers join, so the drawing stays centred at every stage
+    // instead of only once all three are up.
+    const t2 = revealed[1] || 0;
+    const t3 = revealed[2] || 0;
+    const stage = (from) => from[0] + (from[1] - from[0]) * t2 + (from[2] - from[1]) * t3;
+    track.style.setProperty("--stage-shift", stage(STAGE_SHIFT).toFixed(2) + "%");
+    track.style.setProperty("--stage-scale", stage(STAGE_SCALE).toFixed(4));
 
     if (rail) {
       const span = (steps.length - 1) * STRIDE + BAND;
@@ -425,16 +448,34 @@ function cccInitExplodedScroll() {
     }
   };
 
-  const onScroll = () => {
-    if (ticking) return;
-    ticking = true;
-    window.requestAnimationFrame(update);
+  let raf = null;
+  let shown = null;
+  let painted = -1;
+  const schedule = () => {
+    if (raf === null) raf = window.requestAnimationFrame(tick);
   };
 
+  function tick() {
+    raf = null;
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const rect = media.getBoundingClientRect();
+    const target = targetProgress(rect, vh);
+    if (shown === null) shown = target;
+    const gap = target - shown;
+    shown = Math.abs(gap) < 0.0004 ? target : shown + gap * EASE;
+    if (Math.abs(shown - painted) > 0.0003 || (shown === target && painted !== target)) {
+      render(shown);
+      painted = shown;
+    }
+    // Keep the loop alive while the section is anywhere near the viewport (so
+    // it's ready for the next scroll) or while it still has settling to do.
+    if (shown !== target || (rect.bottom > -vh && rect.top < vh * 1.5)) schedule();
+  }
+
   steps.forEach((step) => step.style.setProperty("--sp", "0"));
-  update();
-  window.addEventListener("scroll", onScroll, { passive: true });
-  window.addEventListener("resize", onScroll, { passive: true });
+  schedule();
+  window.addEventListener("scroll", schedule, { passive: true });
+  window.addEventListener("resize", schedule, { passive: true });
 }
 
 function cccInitFaqAccordion() {

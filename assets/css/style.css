@@ -1635,21 +1635,35 @@ section.full-bleed-hero { padding: 0; }
    own 0-1 progress to --lp (opacity) and --ly (the remaining rise), every
    frame, straight from scroll position -- no CSS transition, so it tracks the
    scrollbar 1:1 and reverses on the way back up. */
+/* Runs tight to the logo marquee above it: the section already opens with a
+   lot of quiet space around the drawing, so the standard 84px section lead-in
+   on top of the marquee's own padding read as a hole in the page. */
+#one-system { padding-top: 40px; }
 .exploded-scroll { display: grid; grid-template-columns: 0.86fr 1fr; gap: 64px; margin-top: 8px; }
 .exploded-scroll-media { position: relative; align-self: stretch; }
 .exploded-scroll-visual {
   position: sticky;
   top: 96px;
   /* Squarer than the other media frames on the site: the exploded stack needs
-     vertical room for three bands, not a landscape crop. */
+     vertical room for three bands, not a landscape crop. Deliberately given no
+     card treatment -- no panel, border, or shadow. The renders are transparent
+     line drawings, so letting them sit straight on the page reads as a drawing
+     rather than as stock imagery dropped into a component. It also means there
+     is no crop edge for a layer to be sliced against as it rises in. */
   aspect-ratio: 1 / 1;
-  background: linear-gradient(165deg, var(--color-white), var(--color-paper));
-  border: 1px solid var(--color-line);
-  border-radius: 20px;
-  box-shadow: var(--shadow-lift);
-  overflow: hidden;
 }
-.exploded-layer-track { position: relative; height: 100%; }
+.exploded-layer-track {
+  position: relative;
+  height: 100%;
+  /* Keeps the drawing composed at every stage rather than only at the end:
+     with just the roof up, the stack is nudged down and scaled up so it reads
+     as centred in the frame instead of stranded at the top over empty space.
+     Each layer that joins pulls the camera back toward the settled view.
+     cccInitExplodedScroll interpolates both values off the layer progress. */
+  transform: translateY(var(--stage-shift, 0%)) scale(var(--stage-scale, 1));
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
 .exploded-layer-slide {
   position: absolute;
   left: 0;
@@ -1674,11 +1688,13 @@ section.full-bleed-hero { padding: 0; }
 .exploded-layer-slide[data-step="2"] { top: 24.7%; }
 .exploded-layer-slide[data-step="3"] { top: 52.7%; }
 .exploded-layer-slide img { max-width: 100%; max-height: 100%; object-fit: contain; }
-/* The padding is deliberate scroll room, not decoration: it lengthens the
-   column so the sticky visual stays pinned for the whole three-step assembly
-   instead of letting go halfway through. cccInitExplodedScroll maps the layer
-   reveals onto that pinned window. */
-.exploded-scroll-steps { position: relative; display: flex; flex-direction: column; gap: 18vh; padding: 22vh 0; }
+/* The gap between steps is deliberate scroll room, not decoration: it
+   lengthens the column so the sticky visual stays pinned for the whole
+   three-step assembly instead of letting go halfway through.
+   cccInitExplodedScroll maps the layer reveals onto that pinned window. The
+   top padding stays small so step 01 starts level with the top of the drawing
+   rather than stranded well below it. */
+.exploded-scroll-steps { position: relative; display: flex; flex-direction: column; gap: 18vh; padding: 0 0 10vh; }
 /* Progress rail: a thin track running behind the step numbers with an
    accent fill that rises as --rail-p climbs, so the assembly reads as one
    continuous journey rather than three separate call-outs. */
@@ -1686,8 +1702,8 @@ section.full-bleed-hero { padding: 0; }
   content: "";
   position: absolute;
   left: 11px;
-  top: 22vh;
-  bottom: 22vh;
+  top: 15px;
+  bottom: 10vh;
   width: 2px;
   background: var(--color-line);
 }
@@ -1695,9 +1711,9 @@ section.full-bleed-hero { padding: 0; }
   content: "";
   position: absolute;
   left: 11px;
-  top: 22vh;
+  top: 15px;
   width: 2px;
-  height: calc(var(--rail-p, 0) * (100% - 44vh));
+  height: calc(var(--rail-p, 0) * (100% - 10vh - 15px));
   background: var(--color-accent);
 }
 .exploded-scroll-step {
@@ -1713,6 +1729,10 @@ section.full-bleed-hero { padding: 0; }
   top: 6px;
   width: 18px;
   height: 18px;
+  /* Explicit because the global `* { box-sizing: border-box }` doesn't match
+     pseudo-elements: without it the 2px border sat outside the 18px, making
+     the dot 22px wide and pushing its centre 2px off the rail. */
+  box-sizing: border-box;
   border-radius: 50%;
   background: var(--color-white);
   border: 2px solid var(--color-line);
@@ -1728,7 +1748,7 @@ section.full-bleed-hero { padding: 0; }
   /* No sticky frame or scroll-driven assembly on mobile -- just let all three images stack
      in normal flow, in order, above the step list. */
   .exploded-scroll-visual { position: static; aspect-ratio: auto; }
-  .exploded-layer-track { height: auto; }
+  .exploded-layer-track { height: auto; transform: none !important; }
   .exploded-layer-slide { position: static; height: auto; padding: 0; margin-bottom: 16px; transform: none !important; opacity: 1 !important; }
   .exploded-scroll-steps { gap: 28px; padding: 0; }
   .exploded-scroll-steps::before, .exploded-scroll-steps::after { display: none; }
