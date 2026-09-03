@@ -341,73 +341,87 @@ function cccInitScrollMotion() {
 // path -- so without this check, reduced-motion users would be the ones
 // most likely to end up with a FAQ item stuck open.
 // Drives the "one coordinated building system" exploded diagram: the visual
-// stays sticky while three text steps scroll past it, and each handoff
-// between images runs as two sequential phases instead of one continuous
-// overlap -- the outgoing slide finishes climbing all the way out of the
-// masked window first (the incoming slide stays parked below, entirely out
-// of view), and only once that's done does the incoming slide climb up into
-// place. So the two are never simultaneously part-visible in the window --
-// one fully leaves, then the other fully arrives, matching how the text
-// beside it settles into place rather than blending into the next line.
-// Every value (--sp per step, --ly per slide) is written straight to a CSS
-// custom property every frame -- no class toggle, no transition -- so the
-// motion tracks the scrollbar 1:1. Same language as the shared .scroll-reveal
-// --p system, just kept local since it needs its own bookkeeping and a
-// progress rail. Plain scroll+rAF rather than the shared IntersectionObserver
-// loop -- only a few elements, so per-frame getBoundingClientRect is cheap,
-// and it keeps the reveal perfectly in sync with the sticky visual.
+// stays sticky while three text steps scroll past it, and each step's layer
+// rises up into its own band of the frame and *stays* there -- roof first,
+// then interior partitions beneath it, then exterior walls beneath those --
+// so the building assembles itself step by step and ends on the full exploded
+// axonometric. Nothing is ever removed; step N+1 adds to what's already up.
+// Every value (--sp per step, --lp/--ly per layer) is written straight to a
+// CSS custom property every frame -- no class toggle, no transition -- so the
+// motion tracks the scrollbar 1:1 and reverses on the way back up. Same
+// language as the shared .scroll-reveal --p system, just kept local since it
+// needs its own bookkeeping and a progress rail. Plain scroll+rAF rather than
+// the shared IntersectionObserver loop -- only a few elements, so per-frame
+// getBoundingClientRect is cheap, and it keeps the reveal perfectly in sync
+// with the sticky visual.
 function cccInitExplodedScroll() {
+  const media = document.querySelector(".exploded-scroll-media");
+  const visual = document.querySelector(".exploded-scroll-visual");
   const rail = document.querySelector(".exploded-scroll-steps");
   const steps = Array.from(document.querySelectorAll(".exploded-scroll-step"));
   const slides = Array.from(document.querySelectorAll(".exploded-layer-slide"));
-  if (!steps.length || !slides.length) return;
+  if (!media || !visual || !steps.length || !slides.length) return;
 
   // Deliberately NOT gated on cccA11yPrefersReducedMotion() like the other
-  // scroll-driven systems in this file: --ly here selects *which* image is
-  // in the window (content), not just how it eases in (decoration) --
-  // suppressing it would freeze reduced-motion visitors on the first image
+  // scroll-driven systems in this file: --lp here decides *whether* a layer
+  // of the diagram is shown (content), not just how it eases in (decoration)
+  // -- suppressing it would freeze reduced-motion visitors on the first layer
   // forever. The step marker's own decorative motion still gets suppressed,
   // via the !important rules in the accessibility section of style.css.
 
   const clamp01 = (n) => (n < 0 ? 0 : n > 1 ? 1 : n);
   const easeOut = (t) => 1 - Math.pow(1 - t, 3);
-  // Splits one step's [0,1] progress into two back-to-back halves: the first
-  // drives the outgoing slide's exit, the second the incoming slide's entry.
-  const phaseOut = (t) => clamp01(t * 2);
-  const phaseIn = (t) => clamp01((t - 0.5) * 2);
-  const progressByStep = new Map();
+  // How far a layer sits below its slot before it has been revealed.
+  const RISE_PX = 84;
+  // Each layer owns a slice of the section's scroll: LEAD of dead scroll
+  // first, then one BAND-long reveal every STRIDE. Deriving all three from one
+  // shared progress (rather than from where each text block happens to sit) is
+  // what keeps the beats evenly spaced and short -- roughly a wheel notch each
+  // -- and guarantees the order never depends on text length. Everything is
+  // done well before the end of the window, so the finished exploded view gets
+  // a long hold before the frame lets go.
+  const LEAD = 0.05;
+  const STRIDE = 0.29;
+  const BAND = 0.26;
+  // Where the frame is on screen when the sequence starts, as a share of the
+  // viewport: high enough that the frame is essentially fully visible, so it's
+  // never left sitting empty while the visitor scrolls toward it.
+  const APPROACH_AT = 0.42;
 
   let ticking = false;
   const update = () => {
     ticking = false;
     const vh = window.innerHeight || document.documentElement.clientHeight;
-    const start = vh * 0.88;
-    const end = vh * 0.28;
+    const rect = media.getBoundingClientRect();
+    const pinTop = parseFloat(getComputedStyle(visual).top) || 0;
+    const line = vh * APPROACH_AT;
+    // Two phases share one progress track: the frame rising to its pin point,
+    // then the pinned window itself (how far the sticky visual can travel
+    // inside its column before it lets go).
+    const approach = Math.max(line - pinTop, 1);
+    const travel = Math.max(rect.height - visual.offsetHeight, 1);
+    const p = clamp01((line - rect.top) / (approach + travel));
 
-    let current = null;
-    steps.forEach((step) => {
-      const raw = clamp01((start - step.getBoundingClientRect().top) / (start - end));
-      const p = easeOut(raw);
-      progressByStep.set(step, p);
-      step.style.setProperty("--sp", p.toFixed(4));
-      if (p > 0.5) current = step;
+    let current = steps[0] || null;
+    steps.forEach((step, i) => {
+      const sp = easeOut(clamp01((p - (LEAD + i * STRIDE)) / BAND));
+      step.style.setProperty("--sp", sp.toFixed(4));
+      if (sp > 0.5) current = step;
     });
     steps.forEach((step) => step.classList.toggle("is-current", step === current));
 
     slides.forEach((slide) => {
-      const n = Number(slide.dataset.step || 0);
-      const ownStep = steps.find((s) => Number(s.dataset.step) === n);
-      const nextStep = steps.find((s) => Number(s.dataset.step) === n + 1);
-      const tIn = ownStep ? progressByStep.get(ownStep) : 1;
-      const tOut = nextStep ? progressByStep.get(nextStep) : 0;
-      const entryPhase = n === 1 ? 1 : phaseIn(tIn); // slide 1 is already in place from the start
-      const exitPhase = phaseOut(tOut);
-      slide.style.setProperty("--ly", ((1 - entryPhase) * 100 - exitPhase * 100).toFixed(2) + "%");
+      const i = Math.max(Number(slide.dataset.step || 1) - 1, 0);
+      // Own band only -- once it reaches 1 it stays there, which is what makes
+      // the assembly cumulative rather than a hand-off.
+      const lp = easeOut(clamp01((p - (LEAD + i * STRIDE)) / BAND));
+      slide.style.setProperty("--lp", lp.toFixed(4));
+      slide.style.setProperty("--ly", ((1 - lp) * RISE_PX).toFixed(2) + "px");
     });
 
     if (rail) {
-      const railP = steps.reduce((sum, s, i) => sum + (i > 0 ? progressByStep.get(s) : 0), 0) / (steps.length - 1);
-      rail.style.setProperty("--rail-p", railP.toFixed(4));
+      const span = (steps.length - 1) * STRIDE + BAND;
+      rail.style.setProperty("--rail-p", clamp01((p - LEAD) / span).toFixed(4));
     }
   };
 

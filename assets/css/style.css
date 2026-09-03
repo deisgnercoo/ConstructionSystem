@@ -716,6 +716,8 @@ section.on-paper-dim { background: var(--color-paper-dim); }
 .section-head:has(+ .system-grid) p { font-size: 1.08rem; }
 .section-head:has(+ .stat-band) { max-width: none; }
 .section-head:has(+ .card-grid) { max-width: none; }
+.section-head:has(+ .exploded-scroll) { max-width: none; }
+.section-head:has(+ .exploded-scroll) p { font-size: 1.08rem; }
 .section-head:has(+ .project-grid) { max-width: none; }
 .section-head:has(+ .location-grid) { max-width: none; }
 .section-head:has(+ .flow-diagram) { max-width: none; }
@@ -1624,21 +1626,23 @@ section.full-bleed-hero { padding: 0; }
 
 /* ---------- Exploded system scroll build-up (roof / interior / exterior
    layers stack in as the visitor scrolls past each step) ----------
-   Each image is its own full-size slide, independently positioned by its
-   own --ly (percent of the masked window, no CSS transition, no opacity
-   blend). cccInitExplodedScroll drives the two-step handoff as two
-   sequential phases rather than one continuous overlap: phase 1 is the
-   outgoing slide finishing its climb out the top (the incoming slide stays
-   parked below, fully out of the window); only once phase 1 completes does
-   phase 2 bring the incoming slide up into place. So the two are never both
-   partially visible in the window at once -- one fully leaves, then the
-   other fully arrives. */
+   The three layers each own a horizontal band of the frame -- roof up top,
+   interior partitions through the middle, exterior walls along the bottom --
+   so together they read as one exploded axonometric of the building. Each
+   band rises into its slot from below and *stays*, so the assembly builds up
+   cumulatively as the visitor scrolls: roof, then partitions beneath it, then
+   the exterior walls beneath those. cccInitExplodedScroll writes each band's
+   own 0-1 progress to --lp (opacity) and --ly (the remaining rise), every
+   frame, straight from scroll position -- no CSS transition, so it tracks the
+   scrollbar 1:1 and reverses on the way back up. */
 .exploded-scroll { display: grid; grid-template-columns: 0.86fr 1fr; gap: 64px; margin-top: 8px; }
 .exploded-scroll-media { position: relative; align-self: stretch; }
 .exploded-scroll-visual {
   position: sticky;
-  top: 110px;
-  aspect-ratio: 4 / 3;
+  top: 96px;
+  /* Squarer than the other media frames on the site: the exploded stack needs
+     vertical room for three bands, not a landscape crop. */
+  aspect-ratio: 1 / 1;
   background: linear-gradient(165deg, var(--color-white), var(--color-paper));
   border: 1px solid var(--color-line);
   border-radius: 20px;
@@ -1648,17 +1652,33 @@ section.full-bleed-hero { padding: 0; }
 .exploded-layer-track { position: relative; height: 100%; }
 .exploded-layer-slide {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  height: 44%;
   box-sizing: border-box;
-  padding: 32px;
+  padding: 0 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: translateY(var(--ly, 0%));
-  will-change: transform;
+  opacity: var(--lp, 1);
+  transform: translateY(var(--ly, 0px));
+  will-change: opacity, transform;
 }
+/* Bands overlap slightly; each source render carries its own whitespace, so
+   the drawn geometry still separates cleanly into roof / interior / exterior.
+   The offsets are nudged up by ~2.7% from an even 0/28/56 split: the roof
+   render carries more transparent margin above it than the exterior render
+   does below, so shifting the whole stack lands equal breathing room at the
+   top and bottom of the frame. */
+.exploded-layer-slide[data-step="1"] { top: -3.3%; }
+.exploded-layer-slide[data-step="2"] { top: 24.7%; }
+.exploded-layer-slide[data-step="3"] { top: 52.7%; }
 .exploded-layer-slide img { max-width: 100%; max-height: 100%; object-fit: contain; }
-.exploded-scroll-steps { position: relative; display: flex; flex-direction: column; gap: 34vh; padding: 12vh 0; }
+/* The padding is deliberate scroll room, not decoration: it lengthens the
+   column so the sticky visual stays pinned for the whole three-step assembly
+   instead of letting go halfway through. cccInitExplodedScroll maps the layer
+   reveals onto that pinned window. */
+.exploded-scroll-steps { position: relative; display: flex; flex-direction: column; gap: 18vh; padding: 22vh 0; }
 /* Progress rail: a thin track running behind the step numbers with an
    accent fill that rises as --rail-p climbs, so the assembly reads as one
    continuous journey rather than three separate call-outs. */
@@ -1666,8 +1686,8 @@ section.full-bleed-hero { padding: 0; }
   content: "";
   position: absolute;
   left: 11px;
-  top: 12vh;
-  bottom: 12vh;
+  top: 22vh;
+  bottom: 22vh;
   width: 2px;
   background: var(--color-line);
 }
@@ -1675,9 +1695,9 @@ section.full-bleed-hero { padding: 0; }
   content: "";
   position: absolute;
   left: 11px;
-  top: 12vh;
+  top: 22vh;
   width: 2px;
-  height: calc(var(--rail-p, 0) * (100% - 24vh));
+  height: calc(var(--rail-p, 0) * (100% - 44vh));
   background: var(--color-accent);
 }
 .exploded-scroll-step {
@@ -1705,11 +1725,11 @@ section.full-bleed-hero { padding: 0; }
 
 @media (max-width: 900px) {
   .exploded-scroll { grid-template-columns: 1fr; gap: 32px; }
-  /* No sticky window/filmstrip on mobile -- just let all three images stack
+  /* No sticky frame or scroll-driven assembly on mobile -- just let all three images stack
      in normal flow, in order, above the step list. */
   .exploded-scroll-visual { position: static; aspect-ratio: auto; }
   .exploded-layer-track { height: auto; }
-  .exploded-layer-slide { position: static; height: auto; padding: 0; margin-bottom: 16px; transform: none !important; }
+  .exploded-layer-slide { position: static; height: auto; padding: 0; margin-bottom: 16px; transform: none !important; opacity: 1 !important; }
   .exploded-scroll-steps { gap: 28px; padding: 0; }
   .exploded-scroll-steps::before, .exploded-scroll-steps::after { display: none; }
   .exploded-scroll-step { opacity: 1; padding-left: 0; max-width: none; }
@@ -2421,9 +2441,10 @@ html[data-a11y-links="on"] .a11y-panel a { background: none; box-shadow: none; }
 /* Reduced motion, driven by the user's choice in the panel. Mirrors the
    prefers-reduced-motion block near the top of this file so the two routes to
    "calm the page down" produce the same result. main.js also skips wiring
-   most scroll-linked motion when this is on -- the exploded-diagram filmstrip
-   is the one exception, since its --reel there selects content, not
-   decoration (see cccInitExplodedScroll). */
+   most scroll-linked motion when this is on -- the exploded diagram is the one
+   exception, since its --lp there decides which layers of the drawing are
+   shown at all, which is content rather than decoration (see
+   cccInitExplodedScroll). */
 html[data-a11y-motion="reduce"] *,
 html[data-a11y-motion="reduce"] *::before,
 html[data-a11y-motion="reduce"] *::after {
