@@ -340,6 +340,89 @@ function cccInitScrollMotion() {
 // is only ever set back to false from inside that event on the closing
 // path -- so without this check, reduced-motion users would be the ones
 // most likely to end up with a FAQ item stuck open.
+// Drives the "one coordinated building system" exploded diagram: the visual
+// stays sticky while three text steps scroll past it, and each handoff
+// between images runs as two sequential phases instead of one continuous
+// overlap -- the outgoing slide finishes climbing all the way out of the
+// masked window first (the incoming slide stays parked below, entirely out
+// of view), and only once that's done does the incoming slide climb up into
+// place. So the two are never simultaneously part-visible in the window --
+// one fully leaves, then the other fully arrives, matching how the text
+// beside it settles into place rather than blending into the next line.
+// Every value (--sp per step, --ly per slide) is written straight to a CSS
+// custom property every frame -- no class toggle, no transition -- so the
+// motion tracks the scrollbar 1:1. Same language as the shared .scroll-reveal
+// --p system, just kept local since it needs its own bookkeeping and a
+// progress rail. Plain scroll+rAF rather than the shared IntersectionObserver
+// loop -- only a few elements, so per-frame getBoundingClientRect is cheap,
+// and it keeps the reveal perfectly in sync with the sticky visual.
+function cccInitExplodedScroll() {
+  const rail = document.querySelector(".exploded-scroll-steps");
+  const steps = Array.from(document.querySelectorAll(".exploded-scroll-step"));
+  const slides = Array.from(document.querySelectorAll(".exploded-layer-slide"));
+  if (!steps.length || !slides.length) return;
+
+  // Deliberately NOT gated on cccA11yPrefersReducedMotion() like the other
+  // scroll-driven systems in this file: --ly here selects *which* image is
+  // in the window (content), not just how it eases in (decoration) --
+  // suppressing it would freeze reduced-motion visitors on the first image
+  // forever. The step marker's own decorative motion still gets suppressed,
+  // via the !important rules in the accessibility section of style.css.
+
+  const clamp01 = (n) => (n < 0 ? 0 : n > 1 ? 1 : n);
+  const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+  // Splits one step's [0,1] progress into two back-to-back halves: the first
+  // drives the outgoing slide's exit, the second the incoming slide's entry.
+  const phaseOut = (t) => clamp01(t * 2);
+  const phaseIn = (t) => clamp01((t - 0.5) * 2);
+  const progressByStep = new Map();
+
+  let ticking = false;
+  const update = () => {
+    ticking = false;
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const start = vh * 0.88;
+    const end = vh * 0.28;
+
+    let current = null;
+    steps.forEach((step) => {
+      const raw = clamp01((start - step.getBoundingClientRect().top) / (start - end));
+      const p = easeOut(raw);
+      progressByStep.set(step, p);
+      step.style.setProperty("--sp", p.toFixed(4));
+      if (p > 0.5) current = step;
+    });
+    steps.forEach((step) => step.classList.toggle("is-current", step === current));
+
+    slides.forEach((slide) => {
+      const n = Number(slide.dataset.step || 0);
+      const ownStep = steps.find((s) => Number(s.dataset.step) === n);
+      const nextStep = steps.find((s) => Number(s.dataset.step) === n + 1);
+      const tIn = ownStep ? progressByStep.get(ownStep) : 1;
+      const tOut = nextStep ? progressByStep.get(nextStep) : 0;
+      const entryPhase = n === 1 ? 1 : phaseIn(tIn); // slide 1 is already in place from the start
+      const exitPhase = phaseOut(tOut);
+      slide.style.setProperty("--ly", ((1 - entryPhase) * 100 - exitPhase * 100).toFixed(2) + "%");
+    });
+
+    if (rail) {
+      const railP = steps.reduce((sum, s, i) => sum + (i > 0 ? progressByStep.get(s) : 0), 0) / (steps.length - 1);
+      rail.style.setProperty("--rail-p", railP.toFixed(4));
+    }
+  };
+
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(update);
+  };
+
+  steps.forEach((step) => step.style.setProperty("--sp", "0"));
+  update();
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
+}
+
 function cccInitFaqAccordion() {
   document.querySelectorAll(".faq-item").forEach((details) => {
     const summary = details.querySelector("summary");
@@ -768,6 +851,7 @@ document.addEventListener("DOMContentLoaded", () => {
   cccWireForms();
   cccInitA11yPanel();
   cccInitScrollMotion();
+  cccInitExplodedScroll();
   cccInitFaqAccordion();
   document.querySelectorAll(".blueprint-bg-slot").forEach((slot, i) => {
     slot.outerHTML = cccBlueprintBg(i);

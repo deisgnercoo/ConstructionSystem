@@ -131,6 +131,11 @@ html { scroll-behavior: smooth; }
     transform: none !important;
     opacity: 1 !important;
   }
+  /* .exploded-layer-slide is deliberately left alone here -- its transform
+     is what selects which image is in the window, not decorative easing, so
+     suppressing it would freeze reduced-motion visitors on the first image
+     forever. Only the step marker's own decorative motion is stripped. */
+  .exploded-scroll-step::before, .exploded-scroll-step h3 { transform: none !important; }
 }
 
 body {
@@ -1617,6 +1622,101 @@ section.full-bleed-hero { padding: 0; }
   .exploded-label { white-space: normal; }
 }
 
+/* ---------- Exploded system scroll build-up (roof / interior / exterior
+   layers stack in as the visitor scrolls past each step) ----------
+   Each image is its own full-size slide, independently positioned by its
+   own --ly (percent of the masked window, no CSS transition, no opacity
+   blend). cccInitExplodedScroll drives the two-step handoff as two
+   sequential phases rather than one continuous overlap: phase 1 is the
+   outgoing slide finishing its climb out the top (the incoming slide stays
+   parked below, fully out of the window); only once phase 1 completes does
+   phase 2 bring the incoming slide up into place. So the two are never both
+   partially visible in the window at once -- one fully leaves, then the
+   other fully arrives. */
+.exploded-scroll { display: grid; grid-template-columns: 0.86fr 1fr; gap: 64px; margin-top: 8px; }
+.exploded-scroll-media { position: relative; align-self: stretch; }
+.exploded-scroll-visual {
+  position: sticky;
+  top: 110px;
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(165deg, var(--color-white), var(--color-paper));
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+.exploded-layer-track { position: relative; height: 100%; }
+.exploded-layer-slide {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(var(--ly, 0%));
+  will-change: transform;
+}
+.exploded-layer-slide img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.exploded-scroll-steps { position: relative; display: flex; flex-direction: column; gap: 34vh; padding: 12vh 0; }
+/* Progress rail: a thin track running behind the step numbers with an
+   accent fill that rises as --rail-p climbs, so the assembly reads as one
+   continuous journey rather than three separate call-outs. */
+.exploded-scroll-steps::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 12vh;
+  bottom: 12vh;
+  width: 2px;
+  background: var(--color-line);
+}
+.exploded-scroll-steps::after {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 12vh;
+  width: 2px;
+  height: calc(var(--rail-p, 0) * (100% - 24vh));
+  background: var(--color-accent);
+}
+.exploded-scroll-step {
+  position: relative;
+  padding-left: 40px;
+  max-width: 380px;
+  opacity: calc(0.32 + var(--sp, 1) * 0.68);
+}
+.exploded-scroll-step::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-white);
+  border: 2px solid var(--color-line);
+  transform: scale(calc(0.72 + var(--sp, 1) * 0.28));
+}
+.exploded-scroll-step.is-current::before { border-color: var(--color-accent); background: var(--color-accent); }
+.exploded-step-num { display: block; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.1em; color: var(--color-accent); line-height: 1; margin-bottom: 12px; }
+.exploded-scroll-step h3 { margin-bottom: 8px; transform: translateX(calc((1 - var(--sp, 1)) * 10px)); }
+.exploded-scroll-step p { color: var(--color-steel); margin: 0; }
+
+@media (max-width: 900px) {
+  .exploded-scroll { grid-template-columns: 1fr; gap: 32px; }
+  /* No sticky window/filmstrip on mobile -- just let all three images stack
+     in normal flow, in order, above the step list. */
+  .exploded-scroll-visual { position: static; aspect-ratio: auto; }
+  .exploded-layer-track { height: auto; }
+  .exploded-layer-slide { position: static; height: auto; padding: 0; margin-bottom: 16px; transform: none !important; }
+  .exploded-scroll-steps { gap: 28px; padding: 0; }
+  .exploded-scroll-steps::before, .exploded-scroll-steps::after { display: none; }
+  .exploded-scroll-step { opacity: 1; padding-left: 0; max-width: none; }
+  .exploded-scroll-step::before { display: none; }
+  .exploded-scroll-step h3 { transform: none; }
+}
+
 /* ---------- Value split (image + copy, per-audience value sections) ---------- */
 .value-split { display: grid; grid-template-columns: 1fr 1.3fr; gap: 48px; align-items: center; }
 .value-split.reverse .value-split-media { order: 2; }
@@ -2321,7 +2421,9 @@ html[data-a11y-links="on"] .a11y-panel a { background: none; box-shadow: none; }
 /* Reduced motion, driven by the user's choice in the panel. Mirrors the
    prefers-reduced-motion block near the top of this file so the two routes to
    "calm the page down" produce the same result. main.js also skips wiring
-   scroll-linked motion at all when this is on. */
+   most scroll-linked motion when this is on -- the exploded-diagram filmstrip
+   is the one exception, since its --reel there selects content, not
+   decoration (see cccInitExplodedScroll). */
 html[data-a11y-motion="reduce"] *,
 html[data-a11y-motion="reduce"] *::before,
 html[data-a11y-motion="reduce"] *::after {
@@ -2337,6 +2439,10 @@ html[data-a11y-motion="reduce"] .hero .wrap,
 html[data-a11y-motion="reduce"] .page-hero .hero-photo-bg,
 html[data-a11y-motion="reduce"] .page-hero .wrap { transform: none !important; opacity: 1 !important; }
 html[data-a11y-motion="reduce"] .logo-marquee-track { animation: none !important; }
+/* .exploded-layer-slide is left alone -- see the matching note in the
+   prefers-reduced-motion media block near the top of this file. */
+html[data-a11y-motion="reduce"] .exploded-scroll-step::before,
+html[data-a11y-motion="reduce"] .exploded-scroll-step h3 { transform: none !important; }
 
 /* ---------- Global focus visibility ----------
    Buttons and nav links already had focus styling; this covers everything else

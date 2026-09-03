@@ -1,6 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
+    { "source": "/altadena-residence", "destination": "/altadena-residence.html" },
+    { "source": "/altadena-residence/", "destination": "/altadena-residence.html" },
     { "source": "/borrego-springs", "destination": "/borrego-springs.html" },
     { "source": "/borrego-springs/", "destination": "/borrego-springs.html" },
     { "source": "/escondido", "destination": "/escondido.html" },
