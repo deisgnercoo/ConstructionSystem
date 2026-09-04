@@ -5,4 +5,4 @@ User-agent: *
 Disallow: /api/
 Allow: /
 
-Sitemap: https://www.4ccs.com/sitemap.xml
+Sitemap: https://4ccs.com/sitemap.xml

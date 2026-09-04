@@ -1,26 +1,41 @@
-# Apache config for the Bluehost-hosted static site. Mirrors vercel.json --
-# when either file changes for a URL/caching rule, check the other one too.
+# Apache config for the Bluehost-hosted static site. This REPLACES the
+# WordPress site's previous .htaccess entirely -- this project ships no
+# WordPress and needs none of its rewrite rules or caching-plugin
+# (SpeedyCache) block. Mirrors vercel.json's rewrites and headers -- if
+# either changes for a URL or caching rule, check the other one too.
 #
-# Bluehost (Apache + mod_rewrite) has no equivalent to Vercel's "rewrites"
-# config, so the pretty URLs (e.g. /borrego-springs) that vercel.json handles
-# there are reproduced here as internal rewrites: the address bar keeps
-# showing /borrego-springs while Apache actually serves borrego-springs.html.
-# The form submission endpoint itself is unaffected by any of this -- it
-# stays on Vercel (see assets/js/main.js and api/submit-form.js) since
-# Bluehost is static-only and can't run that serverless function.
+# The Partner Application form's Slack/email relay (api/submit-form.js)
+# stays on Vercel and is never requested on this domain at all -- the
+# browser posts straight to
+# https://construction-system-sage.vercel.app/api/submit-form
+# (see assets/js/main.js). Nothing below touches /api/ in any way.
 
-# ---------- Canonical host: force https + www ----------
-# Matches the https://www.4ccs.com/... canonical URLs and og:url values
-# already declared on every page. Without this, the same page reachable at
-# http://, https://4ccs.com, and https://www.4ccs.com would read as three
-# separate URLs to search engines.
 RewriteEngine On
+
+# ---------- Alias domain -> primary domain ----------
+# 4cconstructionsystems.com (with or without www) has always forwarded to
+# 4ccs.com. Made explicit here so it keeps working regardless of how it was
+# wired before (Bluehost domain forwarding and/or something WordPress-side),
+# which goes away with the WordPress install. Goes straight to the
+# canonical https://4ccs.com form below rather than bouncing through it as a
+# second redirect.
+RewriteCond %{HTTP_HOST} ^(?:www\.)?4cconstructionsystems\.com$ [NC]
+RewriteRule ^ https://4ccs.com%{REQUEST_URI} [R=301,L]
+
+# ---------- Canonical host: force https + non-www ----------
+# Production canonical is https://4ccs.com (no www). Matches that form's
+# canonical URLs, og:url values, and sitemap.xml entries declared across
+# every page. Without this, the same page reachable at http://,
+# https://www.4ccs.com, and https://4ccs.com would read as three separate
+# URLs to search engines.
 RewriteCond %{HTTPS} off [OR]
-RewriteCond %{HTTP_HOST} !^www\. [NC]
-RewriteCond %{HTTP_HOST} ^(?:www\.)?(.+)$ [NC]
-RewriteRule ^ https://www.%1%{REQUEST_URI} [R=301,L]
+RewriteCond %{HTTP_HOST} ^www\.4ccs\.com$ [NC]
+RewriteRule ^ https://4ccs.com%{REQUEST_URI} [R=301,L]
 
 # ---------- Pretty URLs -> the real .html files ----------
+# Internal rewrite, not a redirect -- the address bar keeps showing e.g.
+# /borrego-springs while Apache actually serves borrego-springs.html,
+# matching vercel.json's rewrites and how these are listed in sitemap.xml.
 RewriteRule ^altadena-residence/?$ /altadena-residence.html [L]
 RewriteRule ^borrego-springs/?$ /borrego-springs.html [L]
 RewriteRule ^escondido/?$ /escondido.html [L]
