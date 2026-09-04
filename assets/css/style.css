@@ -1696,7 +1696,18 @@ section.full-bleed-hero { padding: 0; }
    cccInitExplodedScroll maps the layer reveals onto that pinned window. The
    top padding stays small so step 01 starts level with the top of the drawing
    rather than stranded well below it. */
-.exploded-scroll-steps { position: relative; display: flex; flex-direction: column; gap: 18vh; padding: 0 0 4vh; }
+.exploded-scroll-steps {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* No fixed gap: the column stretches to the drawing's height (the frame is
+     the taller grid item) and space-between distributes the three steps across
+     exactly that span, so the text block keeps covering the drawing at any
+     viewport width instead of only at the size it was hand-tuned for. */
+  justify-content: space-between;
+  gap: 0;
+  padding: 0;
+}
 /* Progress rail: a thin track running behind the step numbers with an
    accent fill that rises as --rail-p climbs, so the assembly reads as one
    continuous journey rather than three separate call-outs. */
@@ -1708,7 +1719,7 @@ section.full-bleed-hero { padding: 0; }
   /* Runs dot-centre to dot-centre. The last step's height depends on its copy,
      so cccInitExplodedScroll measures the span and publishes it as --rail-len;
      the fallback keeps a sensible line if that never runs. */
-  height: var(--rail-len, calc(100% - 4vh - 15px));
+  height: var(--rail-len, calc(100% - 15px));
   width: 2px;
   background: var(--color-line);
 }
@@ -1718,13 +1729,12 @@ section.full-bleed-hero { padding: 0; }
   left: 11px;
   top: 15px;
   width: 2px;
-  height: calc(var(--rail-p, 0) * var(--rail-len, calc(100% - 4vh - 15px)));
+  height: calc(var(--rail-p, 0) * var(--rail-len, calc(100% - 15px)));
   background: var(--color-accent);
 }
 .exploded-scroll-step {
   position: relative;
   padding-left: 40px;
-  max-width: 380px;
   opacity: calc(0.32 + var(--sp, 1) * 0.68);
 }
 .exploded-scroll-step::before {
@@ -2256,6 +2266,11 @@ section.full-bleed-hero { padding: 0; }
 .contact-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 56px; align-items: flex-start; }
 .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 .form-grid .full { grid-column: 1 / -1; }
+/* HubSpot-embedded form (contact.html) -- the iframe HubSpot injects here is
+   sized by its own script, so this only has to stop it overflowing the card.
+   Field/label styling inside the iframe is controlled from the HubSpot
+   portal, not from this stylesheet. */
+.hs-form-frame { width: 100%; }
 label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--color-ink); margin-bottom: 6px; }
 input, select, textarea {
   width: 100%;

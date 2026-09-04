@@ -381,13 +381,21 @@ function cccInitExplodedScroll() {
   // -- and guarantees the order never depends on text length. Everything is
   // done well before the end of the window, so the finished exploded view gets
   // a long hold before the frame lets go.
-  const LEAD = 0.02;
-  const STRIDE = 0.29;
-  const BAND = 0.26;
+  // BAND is deliberately longer than STRIDE, so each reveal still takes a
+  // generous ~190px of scroll while the next one starts before it has fully
+  // settled. That overlap is what lets the whole assembly finish early -- the
+  // drawing is complete while the reader is still partway down the steps,
+  // rather than only resolving at the very last one -- without making any
+  // individual layer snap into place.
+  const LEAD = 0.01;
+  const STRIDE = 0.21;
+  const BAND = 0.38;
   // Where the frame is on screen when the sequence starts, as a share of the
   // viewport. Set low in the viewport on purpose: the roof begins rising the
-  // moment the frame appears, so it's never left sitting empty.
-  const APPROACH_AT = 0.6;
+  // moment the frame appears, so it's never left sitting empty -- and starting
+  // early is also what lets the assembly finish well before the last step,
+  // without having to rush any individual layer.
+  const APPROACH_AT = 0.85;
   // How the frame is composed at each stage -- roof only, roof + partitions,
   // all three. Alone, the roof is nudged down and scaled up so it sits centred
   // rather than stranded at the top; each layer that joins pulls back toward
@@ -401,7 +409,7 @@ function cccInitExplodedScroll() {
   // remaining distance each frame, which turns those jumps into continuous
   // motion. Reduced motion snaps straight to the target -- no easing means
   // nothing keeps moving after the visitor stops scrolling.
-  const EASE = cccA11yPrefersReducedMotion() ? 1 : 0.12;
+  const EASE = cccA11yPrefersReducedMotion() ? 1 : 0.085;
 
   const targetProgress = (rect, vh) => {
     const pinTop = parseFloat(getComputedStyle(visual).top) || 0;
@@ -575,7 +583,10 @@ function cccShowFormError(form, text) {
   box.innerHTML = `<p>${text}</p>`;
 }
 
-// Where the contact/partner forms POST. Resolved per environment so the same
+// Where the site's remaining custom-submission form POSTs (currently just the
+// "Partner application" form on partners.html -- the contact.html form now
+// submits straight to HubSpot via the embed in that page and never reaches
+// this file or /api/submit-form). Resolved per environment so the same
 // build works everywhere:
 //   - localhost / 127.0.0.1 -> relative, so local testing hits the local dev
 //     server's own function and never sends real mail from a dev machine.
@@ -598,6 +609,10 @@ function cccWireForms() {
   // mailto: fallback: handing the visitor's own email client a pre-filled
   // draft looks like a successful send but leaves nothing on the team's side,
   // which is exactly how a failing endpoint went unnoticed.
+  //
+  // Only matches form.form-grid, so the HubSpot embed on contact.html (a
+  // <div class="hs-form-frame">, not a <form>) is never touched by this --
+  // that submission is handled entirely by HubSpot's own embed script.
   document.querySelectorAll("form.form-grid").forEach((form) => {
     form.addEventListener("submit", (e) => {
       e.preventDefault();

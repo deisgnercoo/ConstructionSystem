@@ -27,7 +27,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500&display=swap" /></noscript>
-<link rel="stylesheet" href="assets/css/style.css?v=71" />
+<link rel="stylesheet" href="assets/css/style.css?v=76" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -112,39 +112,16 @@
       </div>
     </div>
     <div class="card" style="padding: 36px;">
-      <h3>Contact us</h3>
-      <p>Tell us about your project and we'll follow up within one business day.</p>
-      <form class="form-grid">
-        <div class="full">
-          <label for="name">Full Name</label>
-          <input type="text" id="name" name="name" required />
-        </div>
-        <div>
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email" required />
-        </div>
-        <div>
-          <label for="phone">Phone</label>
-          <input type="tel" id="phone" name="phone" />
-        </div>
-        <div class="full">
-          <label for="role">I am a...</label>
-          <select id="role" name="role">
-            <option>Owner / Property Developer</option>
-            <option>Architect / Designer</option>
-            <option>Builder / General Contractor</option>
-            <option>Homeowner</option>
-            <option>Other</option>
-          </select>
-        </div>
-        <div class="full">
-          <label for="message">Project details</label>
-          <textarea id="message" name="message" placeholder="Location, project type, timeline..."></textarea>
-        </div>
-        <div class="full">
-          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Submit Request</button>
-        </div>
-      </form>
+      <!-- HubSpot-hosted form (portal 51531033, form 2a313d80-ef93-4fc8-af8a-d726876e3332).
+           HubSpot receives and distributes submissions directly -- there is no
+           site-side Slack/email relay for this form. The partner application
+           form on partners.html is unrelated and still POSTs to /api/submit-form
+           (see that file and cccWireForms in assets/js/main.js).
+           No h3/intro copy here on purpose -- the HubSpot form itself is
+           configured with its own "Contact us" title and the same intro
+           sentence, so a wrapper heading would just duplicate it. -->
+      <script src="https://js.hsforms.net/forms/embed/51531033.js" defer></script>
+      <div class="hs-form-frame" data-region="na1" data-form-id="2a313d80-ef93-4fc8-af8a-d726876e3332" data-portal-id="51531033"></div>
     </div>
   </div>
 </section>
@@ -197,6 +174,6 @@
     </div>
   </div>
 </footer>
-<script src="assets/js/main.js?v=61" defer></script>
+<script src="assets/js/main.js?v=64" defer></script>
 </body>
 </html>

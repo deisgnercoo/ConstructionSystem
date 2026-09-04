@@ -3,6 +3,11 @@
 // the email API key are read from process.env at REQUEST TIME and never sent
 // to or exposed in the browser -- this file only ever runs server-side.
 //
+// As of the HubSpot migration, this only serves the "Partner application"
+// form on partners.html. The main contact.html form now embeds a HubSpot
+// form directly (portal 51531033) and submits straight to HubSpot -- it never
+// calls this endpoint, and HubSpot handles its own notification/CRM routing.
+//
 // Required environment variables (Vercel project -> Settings -> Environment
 // Variables -> Production, then redeploy):
 //   SLACK_WEBHOOK_URL  Incoming Webhook URL for the #contact-form channel.
