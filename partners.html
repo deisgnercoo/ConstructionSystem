@@ -212,37 +212,13 @@
       <p>Tell us about your firm or project and we'll follow up within 24 hours.</p>
     </div>
     <div class="card" style="padding: 36px;">
-      <form class="form-grid" data-form-name="Partner application">
-        <div class="full">
-          <label for="p-name">Full Name</label>
-          <input type="text" id="p-name" name="name" required />
-        </div>
-        <div>
-          <label for="p-email">Email</label>
-          <input type="email" id="p-email" name="email" required />
-        </div>
-        <div>
-          <label for="p-phone">Phone</label>
-          <input type="tel" id="p-phone" name="phone" />
-        </div>
-        <div class="full">
-          <label for="p-type">Partner type</label>
-          <select id="p-type" name="type">
-            <option>Owner / Property Developer</option>
-            <option>Architect / Designer</option>
-            <option>Builder / General Contractor</option>
-            <option>Material / Product Vendor</option>
-            <option>Other</option>
-          </select>
-        </div>
-        <div class="full">
-          <label for="p-message">Tell us about your firm or project</label>
-          <textarea id="p-message" name="message" placeholder="Typical project types, service area, timeline..."></textarea>
-        </div>
-        <div class="full">
-          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Submit Application</button>
-        </div>
-      </form>
+      <!-- Same HubSpot-hosted form as contact.html (portal 51531033, form
+           2a313d80-ef93-4fc8-af8a-d726876e3332) -- both the Contact and
+           Partner Application entry points now submit into the one HubSpot
+           form rather than each posting to their own destination.
+           api/submit-form.js on Vercel is no longer called by either form. -->
+      <script src="https://js.hsforms.net/forms/embed/51531033.js" defer></script>
+      <div class="hs-form-frame" data-region="na1" data-form-id="2a313d80-ef93-4fc8-af8a-d726876e3332" data-portal-id="51531033"></div>
     </div>
   </div>
 </section>
